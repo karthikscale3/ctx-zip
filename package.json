@@ -1,6 +1,6 @@
 {
   "name": "ctx-zip",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A tool for context compression of tool call results",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
