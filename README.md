@@ -265,6 +265,8 @@ Instead of loading all tools upfront, `MCPSandboxExplorer`:
 
 **Result**: >80%+ reduction in token usage for complex multi-tool workflows. Intermediate results stay in the sandbox, only final outputs flow through the model's context.
 
+![MCP Code Generation](mcp-code-gen.png)
+
 ### Benefits
 
 - **📉 Massive Token Savings**: Load only the tools you need, not all thousands upfront
