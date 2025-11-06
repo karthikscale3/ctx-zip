@@ -45,3 +45,26 @@ export type {
   GrepAndSearchFileToolOptions,
   ReadFileToolOptions,
 } from "./tools/index";
+
+// MCP Sandbox Explorer
+export {
+  createExecutionTool,
+  createExplorationTools,
+  E2BSandboxProvider,
+  LocalSandboxProvider,
+  MCPSandboxExplorer,
+  VercelSandboxProvider,
+} from "./mcp-sandbox/index";
+export type {
+  CommandResult,
+  E2BSandboxOptions,
+  LocalSandboxOptions,
+  MCPServerConfig,
+  SandboxCommand,
+  SandboxExplorerConfig,
+  SandboxFile,
+  SandboxProvider,
+  SandboxProviderOptions,
+  ServerToolsMap,
+  ToolDefinition,
+} from "./mcp-sandbox/index";

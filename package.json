@@ -1,12 +1,15 @@
 {
   "name": "ctx-zip",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A tool for context compression of tool call results",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "example:local": "tsx examples/local_file.ts",
-    "example:blob": "tsx examples/vercel_blob.ts",
+    "example:ctx-local": "tsx examples/ctx-management/local_file.ts",
+    "example:ctx-blob": "tsx examples/ctx-management/vercel_blob.ts",
+    "example:mcp-vercel": "tsx examples/mcp/vercel_mcp_search.ts",
+    "example:mcp-e2b": "tsx examples/mcp/e2b_mcp_search.ts",
+    "example:mcp-local": "tsx examples/mcp/local_mcp_search.ts",
     "build": "tsc -p tsconfig.json",
     "postbuild": "mkdir -p dist/tools/descriptions && cp -R src/tools/descriptions/. dist/tools/descriptions/",
     "start": "node dist/index.js",
@@ -17,7 +20,12 @@
     "ai",
     "tools",
     "context",
-    "compression"
+    "compression",
+    "mcp",
+    "model-context-protocol",
+    "sandbox",
+    "code-execution",
+    "progressive-discovery"
   ],
   "author": "Karthik Kalyanaraman",
   "license": "MIT",
@@ -38,6 +46,22 @@
   },
   "peerDependencies": {
     "ai": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/sdk": {
+      "optional": true
+    },
+    "@vercel/sandbox": {
+      "optional": true
+    },
+    "@e2b/code-interpreter": {
+      "optional": true
+    }
+  },
+  "optionalDependencies": {
+    "@e2b/code-interpreter": "^1.5.1",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@vercel/sandbox": "^1.0.2"
   },
   "devDependencies": {
     "@ai-sdk/openai": "^2.0.35",

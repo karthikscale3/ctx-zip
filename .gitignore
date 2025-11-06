@@ -13,6 +13,12 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Generated MCP files from examples
+generated-mcp-files/
+
+# Local sandbox directory
+.sandbox/
+
 # Environment files
 .env
 .env.local
@@ -32,3 +38,5 @@ node_modules
 .env
 dist
 
+.vercel
+.env*.local

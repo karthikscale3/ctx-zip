@@ -1,0 +1,29 @@
+// MCP Sandbox Explorer - Public API
+
+export {
+  E2BSandboxProvider,
+  type E2BSandboxOptions,
+} from "./e2b-sandbox-provider.js";
+export {
+  LocalSandboxProvider,
+  type LocalSandboxOptions,
+} from "./local-sandbox-provider.js";
+export { MCPSandboxExplorer } from "./mcp-sandbox-explorer.js";
+export type {
+  CommandResult,
+  SandboxCommand,
+  SandboxFile,
+  SandboxProvider,
+  SandboxProviderOptions,
+} from "./sandbox-provider.js";
+export {
+  createExecutionTool,
+  createExplorationTools,
+} from "./sandbox-tools.js";
+export type {
+  MCPServerConfig,
+  SandboxExplorerConfig,
+  ServerToolsMap,
+  ToolDefinition,
+} from "./types.js";
+export { VercelSandboxProvider } from "./vercel-sandbox-provider.js";
