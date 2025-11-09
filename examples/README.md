@@ -135,27 +135,24 @@ npm run example:ctx-local
 
 ---
 
-### `ctx-management/vercel_blob.ts` - Vercel Blob Storage
+### `ctx-management/local_file.ts` - File System Storage with Sessions
 
-**Purpose:** Store tool results in Vercel Blob Storage.
+**Purpose:** Store tool results in the local file system with session-based organization.
 
 **What it does:**
 - Compresses tool call results
-- Uploads to Vercel Blob Storage
-- Retrieves via HTTP URLs
-- Uses `VercelBlobStorageResolver`
+- Stores as JSON files with metadata
+- Organizes by session: `{baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json`
+- Uses `FileAdapter` with session support
+- Demonstrates reading from persisted files
 
 **Run:**
 ```bash
-npm run example:ctx-blob
+npm run example:ctx-local
 ```
 
 **Requirements:**
-```bash
-BLOB_READ_WRITE_TOKEN=vercel_blob_...
-```
-
-**Get Vercel Blob token:** https://vercel.com/docs/storage/vercel-blob
+- OpenAI API key in `.env` file
 
 **Use case:** Production, distributed systems, serverless
 

@@ -2,18 +2,18 @@ import type { ModelMessage } from "ai";
 import assert from "node:assert/strict";
 import { compactMessages, type Boundary } from "../src/index";
 import type {
-  StorageAdapter,
-  StorageWriteParams,
-  StorageWriteResult,
+  FileAdapter,
+  FileWriteParams,
+  FileWriteResult,
 } from "../src/storage/types";
 
-class MemoryStorageAdapter implements StorageAdapter {
+class MemoryFileAdapter implements FileAdapter {
   public writes: { key: string; body: string; contentType?: string }[] = [];
   private prefix: string;
   constructor(prefix = "mem") {
     this.prefix = prefix;
   }
-  async write(params: StorageWriteParams): Promise<StorageWriteResult> {
+  async write(params: FileWriteParams): Promise<FileWriteResult> {
     const bodyStr =
       typeof params.body === "string"
         ? params.body
@@ -130,10 +130,10 @@ function makeConversation(): ModelMessage[] {
 }
 
 async function run(boundary: Boundary) {
-  const adapter = new MemoryStorageAdapter("test");
+  const adapter = new MemoryFileAdapter("test");
   const messages = makeConversation();
   const compacted = await compactMessages(messages, {
-    storage: adapter,
+    baseDir: adapter,
     boundary,
   });
   // eslint-disable-next-line no-console
@@ -148,7 +148,7 @@ async function run(boundary: Boundary) {
 }
 
 async function testSinceLastAssistantOrUserText() {
-  const { compacted, adapter } = await run("since-last-assistant-or-user-text");
+  const { compacted, adapter } = await run("last-turn");
   // Window starts after last user/assistant text (index 9), so only index 11 is compacted.
   assert.equal(adapter.writes.length, 1);
   // Index 3 remains JSON (older fetch)
@@ -174,7 +174,7 @@ async function testSinceLastAssistantOrUserText() {
 }
 
 async function testEntireConversation() {
-  const { compacted, adapter } = await run("entire-conversation");
+  const { compacted, adapter } = await run("all");
   // All tool results before final assistant are processed: indices 3(fetchData),7(readFile),11(fetchData)
   // Only the two fetchData results are written; readFile is reference-only.
   assert.equal(adapter.writes.length, 2);
@@ -205,7 +205,7 @@ async function testFirstNMessages() {
   // Preserve the latest 3 messages; compact the older ones.
   // Latest 3 are indices 10(assistant tool-call), 11(tool fetchData), 12(assistant). So we compact [0..10).
   const { compacted, adapter } = await run({
-    type: "first-n-messages",
+    type: "keep-first",
     count: 3,
   });
   // One write expected: index 3 (fetchData). Index 7 (readFile) becomes reference. Index 11 is preserved.

@@ -1,28 +1,41 @@
 import type { ReadStream } from "node:fs";
 
-export interface StorageWriteParams {
+export interface FileWriteParams {
   key: string;
   body: string | Uint8Array;
   contentType?: string;
 }
 
-export interface StorageReadParams {
+export interface FileReadParams {
   key: string;
 }
 
-export interface StorageWriteResult {
+export interface FileWriteResult {
   key: string;
   url?: string;
 }
 
-export interface StorageAdapter {
-  write(params: StorageWriteParams): Promise<StorageWriteResult>;
-  readText?(params: StorageReadParams): Promise<string>;
+export interface FileAdapter {
+  write(params: FileWriteParams): Promise<FileWriteResult>;
+  readText?(params: FileReadParams): Promise<string>;
   openReadStream?(
-    params: StorageReadParams
+    params: FileReadParams
   ): Promise<NodeJS.ReadableStream | ReadStream>;
   resolveKey(name: string): string;
   toString(): string;
 }
 
-export type UriOrAdapter = string | StorageAdapter | undefined;
+export type UriOrAdapter = string | FileAdapter | undefined;
+
+/**
+ * Metadata wrapper for persisted tool results
+ */
+export interface PersistedToolResult {
+  metadata: {
+    toolName: string;
+    timestamp: string;
+    toolCallId: string;
+    sessionId: string;
+  };
+  output: any;
+}

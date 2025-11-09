@@ -1,5 +1,5 @@
 import readline from "node:readline";
-import type { StorageAdapter } from "./types";
+import type { FileAdapter } from "./types";
 
 export interface GrepResultLine {
   lineNumber: number;
@@ -7,7 +7,7 @@ export interface GrepResultLine {
 }
 
 export async function grepObject(
-  adapter: StorageAdapter,
+  adapter: FileAdapter,
   key: string,
   pattern: RegExp
 ): Promise<GrepResultLine[]> {

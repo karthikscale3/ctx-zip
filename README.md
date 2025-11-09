@@ -69,12 +69,17 @@ const result = await generateText({
   stopWhen: stepCountIs(6),
   prompt: "Use tools to research, summarize, and cite sources.",
   prepareStep: async ({ messages }) => {
-    // 1. Writes the tool results of the first 20 messages to a local file
-    // 2. Replaces those messages with a reference to that file
+    // Example 1: Keep first 20 messages (system instructions) intact, compact the rest
     const compacted = await compactMessages(messages, {
-      storage: storageUri,
-      boundary: { type: "first-n-messages", count: 20 },
+      baseDir: storageUri,
+      boundary: { type: "keep-first", count: 20 },
     });
+
+    // Example 2: Keep last 10 messages (recent context) intact, compact older messages
+    // const compacted = await compactMessages(messages, {
+    //   baseDir: storageUri,
+    //   boundary: { type: "keep-last", count: 10 },
+    // });
 
     return { messages: compacted };
   },
@@ -85,7 +90,7 @@ console.log(result.text);
 
 Notes:
 - The compactor recognizes reader/search tools like `readFile` and `grepAndSearchFile` so their outputs aren’t re-written; a friendly "Read from storage" reference is shown instead.
-- You can pass your own `storageReaderToolNames` to extend this behavior for custom reader tools. If you provide additional reader tools, include them in the `tools` map and add their names to `storageReaderToolNames` so compaction treats their outputs as references rather than rewriting to storage.
+- You can pass your own `fileReaderTools` to extend this behavior for custom reader tools. If you provide additional reader tools, include them in the `tools` map and add their names to `fileReaderTools` so compaction treats their outputs as references rather than rewriting to storage.
 
 Tool inputs (model-provided):
 
@@ -102,25 +107,27 @@ By default, `compactMessages` treats `readFile` and `grepAndSearchFile` as reade
 
 ```ts
 interface CompactOptions {
-  strategy?: "write-tool-results-to-storage" | string; // default
-  storage?: string | StorageAdapter | undefined;        // e.g. "file:///..." | "blob:" | adapter instance
+  strategy?: "write-tool-results-to-file" | string; // default
+  baseDir?: string | FileAdapter | undefined;        // e.g. "file:///..." or adapter instance
   boundary?:
-    | "since-last-assistant-or-user-text"
-    | "entire-conversation"
-    | { type: "first-n-messages"; count: number };     // keep first N intact
-  serializeResult?: (value: unknown) => string;         // default: JSON.stringify(v, null, 2)
-  storageReaderToolNames?: string[];                    // tool names that read from storage
+    | "last-turn"
+    | "all"
+    | { type: "keep-first"; count: number }
+    | { type: "keep-last"; count: number };
+  toolResultSerializer?: (value: unknown) => string;         // default: JSON.stringify(v, null, 2)
+  fileReaderTools?: string[];                    // tool names that read from storage
 }
 ```
 
-- **strategy**: Currently only `write-tool-results-to-storage` is supported.
-- **storage**: Destination for persisted tool outputs. Provide a URI (`file://...`, `blob:`) or an adapter.
+- **strategy**: Currently only `write-tool-results-to-file` is supported.
+- **baseDir**: File system directory for persisted tool outputs. Provide a URI (`file:///path/to/dir`) or a FileAdapter instance.
 - **boundary**:
-  - `since-last-assistant-or-user-text` (default): Compact only the latest turn.
-  - `entire-conversation`: Re-compact the full history.
-  - `{ type: "first-n-messages", count: N }`: Preserve the first N messages (useful for system instructions) and compact the rest.
-- **serializeResult**: Customize how non-string tool outputs are converted to text before writing.
-- **storageReaderToolNames**: Tool names whose outputs will be replaced with a reference back to the source instead of being re-written.
+  - `"last-turn"` (default): Compact only the latest turn.
+  - `"all"`: Re-compact the full history.
+  - `{ type: "keep-first", count: N }`: Preserve the first N messages (useful for system instructions) and compact the rest.
+  - `{ type: "keep-last", count: N }`: Preserve the last N messages (useful for recent context) and compact everything before them.
+- **toolResultSerializer**: Customize how non-string tool outputs are converted to text before writing.
+- **fileReaderTools**: Tool names whose outputs will be replaced with a reference back to the source instead of being re-written.
 
 ---
 
@@ -137,39 +144,37 @@ Examples:
 
 ```ts
 // Use a URI
-await compactMessages(messages, { storage: "file:///var/tmp/ctx-zip" });
+await compactMessages(messages, { baseDir: "file:///var/tmp/ctx-zip" });
 
 // Or construct an adapter
-import { FileStorageAdapter } from "ctx-zip";
+import { FileAdapterClass as FileAdapter } from "ctx-zip";
 await compactMessages(messages, {
-  storage: new FileStorageAdapter({ baseDir: "/var/tmp/ctx-zip" }),
+  baseDir: new FileAdapter({ baseDir: "/var/tmp/ctx-zip" }),
 });
 ```
 
-### Vercel Blob
+### Session-Based Organization
 
-- URI form: `blob:` (optionally `blob://prefix`)
-- Env: set `BLOB_READ_WRITE_TOKEN` (this single token is sufficient)
-
-Examples:
+You can organize tool results by session for better file management:
 
 ```ts
-// Use a URI (requires BLOB_READ_WRITE_TOKEN)
-await compactMessages(messages, { storage: "blob:" });
+// File storage is the default and recommended approach
+import { FileAdapterClass as FileAdapter } from "ctx-zip";
 
-// Or construct an adapter with a prefix
-import { VercelBlobStorageAdapter } from "ctx-zip";
+const storageAdapter = new FileAdapter({
+  baseDir: "/path/to/storage",
+  sessionId: "my-session-123", // Optional: organizes files by session
+});
+
 await compactMessages(messages, {
-  storage: new VercelBlobStorageAdapter({ prefix: "my-agent" }),
+  baseDir: storageAdapter,
+  sessionId: "my-session-123", // Optional: same session ID for consistency
 });
 ```
 
-`.env` example:
-
-```bash
-# Required for Vercel Blob
-BLOB_READ_WRITE_TOKEN=vcblt_rw_...
-```
+Files will be organized as JSON with metadata:
+- Path: `{baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json`
+- Example: `.ctx-storage/my-session-123/tool-results/fetchEmails-001.json`
 
 ---
 
@@ -178,7 +183,7 @@ BLOB_READ_WRITE_TOKEN=vcblt_rw_...
 Adapters implement a minimal interface so you can persist anywhere (S3, Supabase, GCS, Azure Blob, databases, …):
 
 ```ts
-export interface StorageAdapter {
+export interface FileAdapter {
   write(params: { key: string; body: string | Uint8Array; contentType?: string }): Promise<{ key: string; url?: string }>;
   readText?(params: { key: string }): Promise<string>;
   openReadStream?(params: { key: string }): Promise<NodeJS.ReadableStream>;
@@ -191,9 +196,9 @@ Example: S3 (sketch):
 
 ```ts
 import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import type { StorageAdapter } from "ctx-zip";
+import type { FileAdapter } from "ctx-zip";
 
-class S3StorageAdapter implements StorageAdapter {
+class S3FileAdapter implements FileAdapter {
   constructor(private bucket: string, private prefix = "") {}
 
   resolveKey(name: string) {
@@ -214,7 +219,7 @@ class S3StorageAdapter implements StorageAdapter {
 }
 
 // Usage
-// await compactMessages(messages, { storage: new S3StorageAdapter("my-bucket", "agent-prefix") });
+// await compactMessages(messages, { baseDir: new S3FileAdapter("my-bucket", "agent-prefix") });
 ```
 
 You can apply the same pattern to Supabase Storage, GCS, Azure Blob, or any other service.
@@ -224,7 +229,8 @@ You can apply the same pattern to Supabase Storage, GCS, Azure Blob, or any othe
 ## Tips
 
 - Pair compaction with AI SDK loop control to dynamically trim history and adjust models/tools per step. See: [AI SDK – Loop Control: Context Management](https://ai-sdk.dev/docs/agents/loop-control#context-management).
-- When preserving long-lived system instructions, consider `boundary: { type: "first-n-messages", count: N }`.
+- When preserving long-lived system instructions, consider `boundary: { type: "keep-first", count: N }`.
+- When preserving recent context while compacting old messages, consider `boundary: { type: "keep-last", count: N }`.
 - For debugging, use the file backend first (`file://...`) to inspect outputs locally, then switch to `blob:` for production.
 
 ---
@@ -235,7 +241,7 @@ From `ctx-zip`:
 
 - **Compaction**: `compactMessages(messages, options)` and `CompactOptions`
 - **Strategies**: `detectWindowStart`, `messageHasTextContent` (advanced)
-- **Storage Adapters**: `FileStorageAdapter`, `VercelBlobStorageAdapter`, `createStorageAdapter(uriOrAdapter)`
+- **File Adapters**: `FileAdapter`, `createFileAdapter(uriOrAdapter)`, `PersistedToolResult` type
 - **Utilities**: `resolveFileUriFromBaseDir`, `grepObject` (advanced)
 - **Tools**: `createReadFileTool`, `createGrepAndSearchFileTool` (recognized as reader tools by default)
 

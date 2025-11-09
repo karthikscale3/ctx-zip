@@ -1,16 +1,14 @@
 import { tool } from "ai";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { FileStorageAdapter } from "../storage/file";
 import { grepObject } from "../storage/grep";
 import { isKnownKey } from "../storage/knownKeys";
-import { createStorageAdapter } from "../storage/resolver";
+import { createFileAdapter } from "../storage/resolver";
 
 export interface GrepAndSearchFileToolOptions {
   description?: string;
-  baseDir?: string;
-  /** Default storage used when input omitted. Accepts URI or adapter. */
-  storage?: unknown;
+  /** Default file system location used when input omitted. Accepts URI or adapter. */
+  baseDir?: unknown;
 }
 
 const defaultDescription = readFileSync(
@@ -27,7 +25,7 @@ export function createGrepAndSearchFileTool(
       key: z
         .string()
         .describe(
-          "Relative storage key/path to search (no scheme). For file:// it is under the base dir; for blob:// it is under the prefix. Only use for files/blobs previously written in this conversation; cannot search arbitrary paths."
+          "Relative storage key/path to search (no scheme). For file:// storage it is under the base directory. Only use for files previously written in this conversation; cannot search arbitrary paths."
         ),
       pattern: z
         .string()
@@ -52,11 +50,9 @@ export function createGrepAndSearchFileTool(
       }
 
       try {
-        const adapter = options.storage
-          ? createStorageAdapter(options.storage as any)
-          : options.baseDir
-          ? new FileStorageAdapter({ baseDir: options.baseDir })
-          : createStorageAdapter();
+        const adapter = options.baseDir
+          ? createFileAdapter(options.baseDir as any)
+          : createFileAdapter();
 
         const storageUri = adapter.toString();
         if (!isKnownKey(storageUri, key)) {

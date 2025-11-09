@@ -7,17 +7,17 @@ These examples demonstrate **context compression** - efficiently storing and ret
 When AI agents make tool calls, the results can be very large (e.g., database queries, API responses). Instead of passing full results to the AI model (consuming tokens), we:
 
 1. **Compress** tool results into compact format
-2. **Store** compressed data in persistent storage
+2. **Store** in the local file system as structured JSON
 3. **Generate** compact references for the AI
-4. **Retrieve** full data only when needed
+4. **Retrieve** full data only when needed via read/search tools
 
 **Result:** Reduce token usage by 50-90% while maintaining full functionality.
 
 ## 📁 Examples
 
-### `local_file.ts` - Local File Storage
+### `local_file.ts` - File Storage with Sessions
 
-**Purpose:** Store compressed tool results in local files.
+**Purpose:** Store compressed tool results in the local file system with session-based organization.
 
 ```bash
 npm run example:ctx-local
@@ -25,102 +25,72 @@ npm run example:ctx-local
 
 **What it does:**
 ```typescript
-import { FileStorageResolver } from "ctx-zip";
+import { FileAdapterClass as FileAdapter, compactMessages } from "ctx-zip";
 
-// Create resolver
-const resolver = new FileStorageResolver("./ctx-data");
+// Create file adapter with session support
+const fileAdapter = new FileAdapter({
+  baseDir: path.resolve(process.cwd(), ".ctx-storage"),
+  sessionId: "my-session-123"
+});
 
 // Compress and store
-const result = await generateText({
-  model: openai("gpt-4o-mini"),
-  tools: {
-    get_users: tool({
-      // ... returns large list of users ...
-    })
-  },
-  experimental_writeToolCallsToStorage: resolver.getStrategy()
+const compacted = await compactMessages(conversation, {
+  baseDir: fileAdapter,
+  boundary: "all",
+  sessionId: "my-session-123"
 });
 ```
 
+**File Structure:**
+```
+.ctx-storage/
+└── my-session-123/
+    └── tool-results/
+        ├── fetchEmails-001.json
+        ├── fetchEmails-002.json
+        └── searchDocuments-001.json
+```
+
+**JSON Format with Metadata:**
+```json
+{
+  "metadata": {
+    "toolName": "fetchEmails",
+    "timestamp": "2025-11-08T10:30:00.000Z",
+    "toolCallId": "call_abc123",
+    "sessionId": "my-session-123"
+  },
+  "output": {
+    "emails": [...],
+    "meta": {...}
+  }
+}
+```
+
 **Benefits:**
-- ✅ Simple setup
-- ✅ Fast access
+- ✅ Simple file-based storage
+- ✅ Session-organized for easy debugging
+- ✅ Structured JSON with full metadata
+- ✅ Sequential naming for readability
 - ✅ No external dependencies
-- ✅ Good for development
 
 **Use cases:**
 - Development and testing
 - Single-machine workflows
-- Quick prototypes
+- Sandboxed environments
+- Local AI agents
 
 ---
-
-### `vercel_blob.ts` - Vercel Blob Storage
-
-**Purpose:** Store compressed tool results in Vercel Blob Storage.
-
-```bash
-npm run example:ctx-blob
-```
-
-**What it does:**
-```typescript
-import { VercelBlobStorageResolver } from "ctx-zip";
-
-// Create resolver with token
-const resolver = new VercelBlobStorageResolver({
-  token: process.env.BLOB_READ_WRITE_TOKEN!
-});
-
-// Compress and store (same API!)
-const result = await generateText({
-  model: openai("gpt-4o-mini"),
-  tools: { /* ... */ },
-  experimental_writeToolCallsToStorage: resolver.getStrategy()
-});
-```
-
-**Benefits:**
-- ✅ Cloud-based (distributed access)
-- ✅ HTTP URLs for sharing
-- ✅ Vercel ecosystem integration
-- ✅ Automatic CDN distribution
-
-**Use cases:**
-- Production applications
-- Distributed systems
-- Serverless functions
-- Multi-region deployments
-
-**Requirements:**
-```bash
-BLOB_READ_WRITE_TOKEN=vercel_blob_...
-```
-
-Get token: https://vercel.com/docs/storage/vercel-blob
-
----
-
-## 🆚 Storage Comparison
-
-| Feature | Local File | Vercel Blob |
-|---------|------------|-------------|
-| **Setup** | None | Token required |
-| **Speed** | Very fast | Fast |
-| **Cost** | Free | Free tier + paid |
-| **Sharing** | No | Yes (HTTP URLs) |
-| **Persistence** | Local disk | Cloud storage |
-| **Best For** | Development | Production |
 
 ## 📊 Token Savings Example
 
 ### Without Context Compression
 
 ```typescript
-// Tool returns 50KB of user data
+// Tool returns 50KB of email data
 const result = await generateText({
   model: openai("gpt-4o-mini"),
-  tools: { get_users }
+  tools: { fetchEmails }
 });
 
 // AI model receives full 50KB (~12,500 tokens)
@@ -130,47 +100,45 @@ const result = await generateText({
 ### With Context Compression
 
 ```typescript
-// Tool returns 50KB, but compressed to 5KB
-const result = await generateText({
-  model: openai("gpt-4o-mini"),
-  tools: { get_users },
-  experimental_writeToolCallsToStorage: resolver.getStrategy()
+// Tool returns 50KB, compressed to storage reference
+const compacted = await compactMessages(messages, {
+  baseDir: storageAdapter,
+  sessionId: "my-session"
 });
 
 // AI model receives compact reference (~50 tokens)
+// Example: "Written to file: file:///path/to/.ctx-storage/my-session/tool-results/fetchEmails-001.json"
 // Cost: ~$0.00006 per call
-// Savings: ~95% reduction in tokens!
+// Savings: ~96% reduction in tokens!
 ```
 
 ## 🔧 How It Works
 
 ### 1. Tool Execution
 ```typescript
-const users = await get_users(); // Returns large dataset
+const emails = await fetchEmails(); // Returns large dataset
 ```
 
 ### 2. Compression & Storage
 ```typescript
-// Automatically compresses and stores
-const compressed = compress(users);
-const url = await storage.save(compressed);
+// Automatically persists to JSON with metadata
+// File: .ctx-storage/session-abc/tool-results/fetchEmails-001.json
 ```
 
 ### 3. AI Receives Reference
 ```typescript
-// AI sees: "Data stored at: file://ctx-data/abc123"
-// Instead of: [... 50KB of user data ...]
+// AI sees: "Written to file: file:///.ctx-storage/session-abc/tool-results/fetchEmails-001.json. Key: fetchEmails-001.json"
+// Instead of: [... 50KB of email data ...]
 ```
 
 ### 4. Retrieval When Needed
 ```typescript
-// If AI needs the data, it can retrieve via the reference
-const fullData = await storage.retrieve(url);
+// If AI needs the data, it calls the readFile tool
+const fullData = await readFile({ key: "fetchEmails-001.json" });
+// Reads from the session directory automatically
 ```
 
 ## 🚀 Quick Start
-
-### Option 1: Local File Storage (Easiest)
 
 ```bash
 # 1. No setup needed!
@@ -179,93 +147,123 @@ const fullData = await storage.retrieve(url);
 npm run example:ctx-local
 
 # 3. Check stored data
-ls -lh ./ctx-data/
-```
+ls -lh .ctx-storage/*/tool-results/
 
-### Option 2: Vercel Blob Storage (Production)
-
-```bash
-# 1. Get Vercel Blob token
-# Visit: https://vercel.com/dashboard/stores
-
-# 2. Add to .env
-echo "BLOB_READ_WRITE_TOKEN=vercel_blob_..." > ../../.env
-
-# 3. Run example
-npm run example:ctx-blob
+# 4. Inspect a file
+cat .ctx-storage/demo-*/tool-results/fetchEmails-001.json | jq
 ```
 
 ## 📈 Best Practices
 
-### 1. Choose the Right Storage
-
-**Use Local File when:**
-- Developing/testing locally
-- Single-machine deployment
-- No need for sharing across systems
-
-**Use Vercel Blob when:**
-- Production deployment
-- Serverless functions
-- Multi-region or distributed systems
-- Need to share results via URLs
-
-### 2. Set Appropriate Retention
+### 1. Session Management
 
 ```typescript
-// Short-lived data (e.g., API responses)
-const resolver = new FileStorageResolver("./ctx-data", {
-  maxAge: 3600 // 1 hour
-});
+// Create unique session IDs per conversation
+const sessionId = `chat-${userId}-${Date.now()}`;
 
-// Long-lived data (e.g., user reports)
-const resolver = new FileStorageResolver("./ctx-data", {
-  maxAge: 86400 * 30 // 30 days
+const storageAdapter = new FileAdapter({
+  baseDir: path.resolve(process.cwd(), ".ctx-storage"),
+  sessionId
 });
+```
+
+### 2. Cleanup Old Sessions
+
+```typescript
+// Periodically clean up old session directories
+import { promises as fs } from 'fs';
+import path from 'path';
+
+async function cleanupOldSessions(maxAgeMs: number) {
+  const storageDir = '.ctx-storage';
+  const sessions = await fs.readdir(storageDir);
+  
+  for (const session of sessions) {
+    const sessionPath = path.join(storageDir, session);
+    const stats = await fs.stat(sessionPath);
+    
+    if (Date.now() - stats.mtimeMs > maxAgeMs) {
+      await fs.rm(sessionPath, { recursive: true });
+      console.log(`Cleaned up session: ${session}`);
+    }
+  }
+}
+
+// Run daily: clean sessions older than 7 days
+cleanupOldSessions(7 * 24 * 60 * 60 * 1000);
 ```
 
 ### 3. Monitor Storage Usage
 
 ```typescript
-// Check storage size periodically
-import { promises as fs } from 'fs';
+async function getStorageSize() {
+  const storageDir = '.ctx-storage';
+  const sessions = await fs.readdir(storageDir);
+  
+  let totalSize = 0;
+  for (const session of sessions) {
+    const sessionPath = path.join(storageDir, session, 'tool-results');
+    const files = await fs.readdir(sessionPath);
+    
+    for (const file of files) {
+      const stats = await fs.stat(path.join(sessionPath, file));
+      totalSize += stats.size;
+    }
+  }
+  
+  return totalSize;
+}
+```
 
-const getStorageSize = async () => {
-  const files = await fs.readdir('./ctx-data');
-  const sizes = await Promise.all(
-    files.map(f => fs.stat(`./ctx-data/${f}`))
-  );
-  return sizes.reduce((acc, s) => acc + s.size, 0);
+### 4. Read Tools Configuration
+
+```typescript
+// Ensure read tools can access the storage
+const tools = {
+  fetchEmails: tool({ /* ... */ }),
+  readFile: createReadFileTool({ baseDir: storageAdapter }),
+  grepAndSearchFile: createGrepAndSearchFileTool({ baseDir: storageAdapter })
 };
 ```
 
 ## 🐛 Troubleshooting
 
-### Local File Storage
-
-**Issue:** "ENOENT: no such file or directory"
+### Issue: "ENOENT: no such file or directory"
 
 **Solution:**
-```typescript
-import { mkdir } from 'fs/promises';
-await mkdir('./ctx-data', { recursive: true });
+The FileAdapter automatically creates directories, but ensure you have write permissions:
+```bash
+chmod 755 .ctx-storage
 ```
 
-### Vercel Blob Storage
-
-**Issue:** "Unauthorized"
+### Issue: Cannot read from storage
 
 **Solution:**
-- Check token validity: https://vercel.com/dashboard/stores
-- Ensure token has read+write permissions
-- Verify token is correctly loaded from `.env`
+Ensure the read tools use the same storage adapter with the same sessionId:
+```typescript
+// Create once, reuse for all tools
+const storageAdapter = new FileAdapter({
+  baseDir: path.resolve(process.cwd(), ".ctx-storage"),
+  sessionId
+});
 
-**Issue:** "Request rate limit exceeded"
+const tools = {
+  readFile: createReadFileTool({ baseDir: storageAdapter }),
+  // ... other tools
+};
+```
+
+### Issue: Files growing too large
 
 **Solution:**
-- Vercel Blob has rate limits on free tier
-- Consider upgrading plan or throttling requests
-- Use local file storage for development
+Implement periodic cleanup or use boundary settings to compact selectively:
+```typescript
+await compactMessages(messages, {
+  baseDir: storageAdapter,
+  boundary: "last-turn", // Only compact latest turn
+  sessionId
+});
+```
 
 ## 📚 Learn More
 
@@ -275,5 +273,4 @@ await mkdir('./ctx-data', { recursive: true });
 
 ---
 
-**Tip:** Use `local_file.ts` during development for instant feedback, then switch to `vercel_blob.ts` for production deployment!
-
+**Tip:** Use session-based organization to easily debug conversations and clean up old data!

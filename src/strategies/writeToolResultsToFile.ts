@@ -1,22 +1,14 @@
 import type { ModelMessage } from "ai";
 import { randomUUID } from "node:crypto";
 import { registerKnownKey } from "../storage/knownKeys";
-import type { StorageAdapter } from "../storage/types";
+import type { FileAdapter, PersistedToolResult } from "../storage/types";
 
 function formatStoragePathForDisplay(storageUri: string, key: string): string {
   if (!storageUri) return key;
-  if (storageUri.startsWith("blob:")) {
-    // blob root => blob:///<key>
-    if (storageUri === "blob:" || storageUri === "blob:/") {
-      return `blob:///${key}`;
-    }
-    // blob with prefix => blob://prefix/<key>
-    if (storageUri.startsWith("blob://")) {
-      const base = storageUri.replace(/\/$/, "");
-      return `${base}/${key}`;
-    }
-    // Fallback
-    return `${storageUri}:${key}`;
+  // For file:// URIs, show the full path
+  if (storageUri.startsWith("file://")) {
+    const base = storageUri.replace(/\/$/, "");
+    return `${base}/${key}`;
   }
   // Default formatting uses colon separation
   return `${storageUri}:${key}`;
@@ -42,25 +34,20 @@ export function messageHasTextContent(message: ModelMessage | any): boolean {
 /**
  * Controls where the compaction window starts.
  *
- * - "since-last-assistant-or-user-text": Start after the most recent assistant/user text message.
+ * - "last-turn": Start after the most recent assistant/user text message.
  *   Use this to compact only the latest turn and keep recent context intact. (Recommended default)
- * - "entire-conversation": Start at the beginning. Use this to re-compact the full history
+ * - "all": Start at the beginning. Use this to re-compact the full history
  *   or when earlier tool outputs also need persisting.
- */
-/**
- * Controls where the compaction window starts.
- *
- * - "since-last-assistant-or-user-text": Start after the most recent assistant/user text message.
- *   Use this to compact only the latest turn and keep recent context intact. (Recommended default)
- * - "entire-conversation": Start at the beginning. Use this to re-compact the full history
- *   or when earlier tool outputs also need persisting.
- * - { type: "first-n-messages", count: number }: Keep the first N messages intact and start
+ * - { type: "keep-first", count: number }: Keep the first N messages intact and start
  *   compaction afterwards. Useful to preserve initial system/instructions or early context.
+ * - { type: "keep-last", count: number }: Keep the last N messages intact and compact
+ *   everything before them. Useful to preserve recent context while compacting older messages.
  */
 export type Boundary =
-  | "since-last-assistant-or-user-text"
-  | "entire-conversation"
-  | { type: "first-n-messages"; count: number };
+  | "last-turn"
+  | "all"
+  | { type: "keep-first"; count: number }
+  | { type: "keep-last"; count: number };
 
 /**
  * Determine the starting index of the compaction window based on the chosen boundary.
@@ -76,7 +63,7 @@ export function detectWindowStart(
   if (
     typeof boundary === "object" &&
     boundary !== null &&
-    (boundary as any).type === "first-n-messages"
+    (boundary as any).type === "keep-first"
   ) {
     const countRaw = (boundary as any).count;
     const n = Number.isFinite(countRaw)
@@ -88,7 +75,16 @@ export function detectWindowStart(
     const upperBound = Math.max(0, len - 1);
     return Math.min(n, upperBound);
   }
-  if (boundary === "entire-conversation") return 0;
+  // Start compaction from the beginning (keep the last N messages intact)
+  if (
+    typeof boundary === "object" &&
+    boundary !== null &&
+    (boundary as any).type === "keep-last"
+  ) {
+    // Start from 0, will be bounded by endExclusive in detectWindowBounds
+    return 0;
+  }
+  if (boundary === "all") return 0;
   const msgs: any[] = Array.isArray(messages) ? messages : [];
   let windowStart = 0;
   for (let i = msgs.length - 2; i >= 0; i--) {
@@ -117,22 +113,37 @@ export function detectWindowRange(
   const lastIndex = Math.max(0, len - 1);
   if (len <= 1) return { start: 0, endExclusive: 0 };
 
-  // Preserve the latest N messages; compact the older ones.
+  // Preserve the first N messages; compact everything after them.
   if (
     typeof boundary === "object" &&
     boundary !== null &&
-    (boundary as any).type === "first-n-messages"
+    (boundary as any).type === "keep-first"
   ) {
     const countRaw = (boundary as any).count;
     const n = Number.isFinite(countRaw)
       ? Math.max(0, Math.floor(countRaw as number))
       : 0;
-    // End exclusive should stop before the latest N messages (and before the final assistant message)
-    const endExclusive = Math.max(0, Math.min(len - 1, len - n - 1));
+    // Start after the first N messages, end before the final assistant message
+    const startIndex = Math.min(n, len - 1);
+    return { start: startIndex, endExclusive: Math.max(startIndex, len - 1) };
+  }
+
+  // Preserve the last N messages; compact everything before them.
+  if (
+    typeof boundary === "object" &&
+    boundary !== null &&
+    (boundary as any).type === "keep-last"
+  ) {
+    const countRaw = (boundary as any).count;
+    const n = Number.isFinite(countRaw)
+      ? Math.max(0, Math.floor(countRaw as number))
+      : 0;
+    // Compact from start, end before the last N messages (and before the final assistant message)
+    const endExclusive = Math.max(0, Math.min(len - 1, len - n));
     return { start: 0, endExclusive };
   }
 
-  if (boundary === "entire-conversation") {
+  if (boundary === "all") {
     return { start: 0, endExclusive: Math.max(0, len - 1) };
   }
 
@@ -141,21 +152,26 @@ export function detectWindowRange(
 }
 
 /**
- * Options for the write-tool-results-to-storage compaction strategy.
+ * Options for the write-tool-results-to-file compaction strategy.
  */
-export interface WriteToolResultsToStorageOptions {
+export interface WriteToolResultsToFileOptions {
   /** Where to start compacting from in the message list. */
   boundary: Boundary;
-  /** Storage adapter used to resolve keys and write content. */
-  adapter: StorageAdapter;
+  /** File adapter used to resolve keys and write content. */
+  adapter: FileAdapter;
   /** Converts tool outputs into strings before writing. Defaults to JSON.stringify. */
-  serializeResult: (value: unknown) => string;
+  toolResultSerializer: (value: unknown) => string;
   /**
    * Names of tools that READ from previously written storage (e.g., read/search tools).
    * Their results will NOT be re-written; instead a friendly reference to the source is shown.
    * Provide custom names for your own reader/search tools.
    */
-  storageReaderToolNames?: string[];
+  fileReaderTools?: string[];
+  /**
+   * Optional session ID to organize persisted tool results.
+   * Files will be organized as: {baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json
+   */
+  sessionId?: string;
 }
 
 function isToolMessage(msg: any): boolean {
@@ -166,9 +182,9 @@ function isToolMessage(msg: any): boolean {
  * Compaction strategy that writes tool-result payloads to storage and replaces their in-line
  * content with a concise reference to the persisted location.
  */
-export async function writeToolResultsToStorageStrategy(
+export async function writeToolResultsToFileStrategy(
   messages: ModelMessage[],
-  options: WriteToolResultsToStorageOptions
+  options: WriteToolResultsToFileOptions
 ): Promise<ModelMessage[]> {
   const msgs = Array.isArray(messages) ? [...messages] : [];
 
@@ -184,6 +200,10 @@ export async function writeToolResultsToStorageStrategy(
     options.boundary
   );
 
+  // Track sequence numbers per tool name for better file organization
+  const toolSequences = new Map<string, number>();
+  const sessionId = options.sessionId ?? `session-${randomUUID().slice(0, 8)}`;
+
   for (let i = windowStart; i < Math.min(endExclusive, msgs.length - 1); i++) {
     const msg: any = msgs[i];
     if (!isToolMessage(msg)) continue;
@@ -192,14 +212,13 @@ export async function writeToolResultsToStorageStrategy(
       if (!part || part.type !== "tool-result" || !part.output) continue;
 
       // Reference-only behavior for tools that read from storage
-      const defaultStorageReaderNames = ["readFile", "grepAndSearchFile"];
+      const defaultFileReaderNames = ["readFile", "grepAndSearchFile"];
       const configuredNames =
-        options.storageReaderToolNames &&
-        options.storageReaderToolNames.length > 0
-          ? options.storageReaderToolNames
-          : defaultStorageReaderNames;
-      const storageReaderSet = new Set(configuredNames);
-      if (part.toolName && storageReaderSet.has(part.toolName)) {
+        options.fileReaderTools && options.fileReaderTools.length > 0
+          ? options.fileReaderTools
+          : defaultFileReaderNames;
+      const fileReaderSet = new Set(configuredNames);
+      if (part.toolName && fileReaderSet.has(part.toolName)) {
         const output: any = part.output;
         let fileName: string | undefined;
         let key: string | undefined;
@@ -242,38 +261,55 @@ export async function writeToolResultsToStorageStrategy(
         continue;
       }
 
+      // Extract tool output for persistence
       const output: any = part.output;
-      let contentToPersist: string | undefined;
+      let outputValue: any;
 
       if (output && output.type === "json" && output.value !== undefined) {
-        contentToPersist =
-          typeof output.value === "string"
-            ? output.value
-            : options.serializeResult(output.value);
+        outputValue = output.value;
       } else if (
         output &&
         output.type === "text" &&
         typeof output.text === "string"
       ) {
-        contentToPersist = output.text;
+        outputValue = output.text;
+      } else {
+        outputValue = output;
       }
 
-      if (!contentToPersist) continue;
+      if (!outputValue) continue;
 
-      const fileName = `${randomUUID()}.txt`;
+      // Generate descriptive sequential file name
+      const toolName = part.toolName || "unknown";
+      const currentSeq = toolSequences.get(toolName) ?? 0;
+      const nextSeq = currentSeq + 1;
+      toolSequences.set(toolName, nextSeq);
+
+      const seqStr = String(nextSeq).padStart(3, "0");
+      const fileName = `${toolName}-${seqStr}.json`;
+
+      // Wrap output with metadata
+      const persistedResult: PersistedToolResult = {
+        metadata: {
+          toolName,
+          timestamp: new Date().toISOString(),
+          toolCallId: part.toolCallId || randomUUID(),
+          sessionId,
+        },
+        output: outputValue,
+      };
+
       const key = options.adapter.resolveKey(fileName);
       await options.adapter.write({
         key,
-        body: contentToPersist,
-        contentType: "text/plain",
+        body: JSON.stringify(persistedResult, null, 2),
+        contentType: "application/json",
       });
 
       const adapterUri = options.adapter.toString();
-      const isFile = adapterUri.startsWith("file:");
-      const writtenPrefix = isFile ? "Written to file" : "Written to storage";
       part.output = {
         type: "text",
-        value: `${writtenPrefix}: ${formatStoragePathForDisplay(
+        value: `Written to file: ${formatStoragePathForDisplay(
           adapterUri,
           key
         )}. Key: ${key}. Use the read/search tools to inspect its contents.`,

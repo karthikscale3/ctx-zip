@@ -19,6 +19,9 @@ generated-mcp-files/
 # Local sandbox directory
 .sandbox/
 
+# Context compression storage
+.ctx-storage/
+
 # Environment files
 .env
 .env.local

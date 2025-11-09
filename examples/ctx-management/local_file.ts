@@ -1,16 +1,27 @@
 import { generateText, stepCountIs, tool } from "ai";
 import "dotenv/config";
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { z } from "zod";
 import {
   compactMessages,
   createGrepAndSearchFileTool,
   createReadFileTool,
-  resolveFileUriFromBaseDir,
-} from "../src";
+  FileAdapterClass as FileAdapter,
+} from "../../src";
+
+// Create a session ID for this conversation
+const sessionId = `demo-${new Date()
+  .toISOString()
+  .slice(0, 10)}-${Date.now().toString(36)}`;
+
+// Create file adapter with session support
+const fileAdapter = new FileAdapter({
+  baseDir: path.resolve(process.cwd(), ".ctx-storage"),
+  sessionId,
+});
 
 // Tools
-const storage = resolveFileUriFromBaseDir(process.cwd());
 const tools = {
   fetchEmails: tool({
     description: "Fetch recent emails for the current user (50 items)",
@@ -37,11 +48,14 @@ const tools = {
       };
     },
   }),
-  readFile: createReadFileTool({ storage }),
-  grepAndSearchFile: createGrepAndSearchFileTool({ storage }),
+  readFile: createReadFileTool({ baseDir: fileAdapter }),
+  grepAndSearchFile: createGrepAndSearchFileTool({ baseDir: fileAdapter }),
 };
 
 async function main() {
+  console.log(`\n🗂️  Session ID: ${sessionId}`);
+  console.log(`📁 Storage location: ${fileAdapter.toString()}\n`);
+
   // 1) Ask the model to summarize recent emails (will call fetchEmails)
   const first = await generateText({
     model: "openai/gpt-4.1-mini",
@@ -60,15 +74,29 @@ async function main() {
   console.log(first.text);
 
   const firstConversation = first.response.messages;
-  console.log("\n=== First Conversation ===");
-  console.log(JSON.stringify(firstConversation, null, 2));
+  console.log("\n=== First Conversation (Before Compaction) ===");
+  console.log(`Messages: ${firstConversation.length}`);
 
   const compacted = await compactMessages(firstConversation, {
-    storage,
-    boundary: "entire-conversation",
+    baseDir: fileAdapter,
+    boundary: "all",
+    sessionId,
   });
   console.log("\n=== Compacted Conversation ===");
+  console.log(`Messages: ${compacted.length}`);
   console.log(JSON.stringify(compacted, null, 2));
+
+  // 2) Show the persisted JSON file structure
+  console.log("\n=== Persisted Files ===");
+  console.log("Tool results have been saved to JSON files with metadata.");
+  console.log(
+    `Check: ${path.resolve(
+      process.cwd(),
+      ".ctx-storage",
+      sessionId,
+      "tool-results"
+    )}`
+  );
 
   // 3) Ask a realistic follow-up that should read from the persisted file
   const followUp = await generateText({
@@ -89,14 +117,16 @@ async function main() {
   console.log(followUp.text);
 
   const secondConversation = followUp.response.messages;
-  console.log("\n=== Follow-up Conversation ===");
-  console.log(JSON.stringify(secondConversation, null, 2));
+  console.log("\n=== Follow-up Conversation (Before Compaction) ===");
+  console.log(`Messages: ${secondConversation.length}`);
 
   const compactedFollowUp = await compactMessages(secondConversation, {
-    storage,
-    boundary: "entire-conversation",
+    baseDir: fileAdapter,
+    boundary: "all",
+    sessionId,
   });
   console.log("\n=== Compacted Follow-up Conversation ===");
+  console.log(`Messages: ${compactedFollowUp.length}`);
   console.log(JSON.stringify(compactedFollowUp, null, 2));
 }
 

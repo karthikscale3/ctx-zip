@@ -4,25 +4,26 @@
 export { compactMessages } from "./compact";
 export type { CompactOptions } from "./compact";
 
-// Storage - core
+// File adapter - core
 export {
-  createStorageAdapter,
+  createFileAdapter,
   resolveFileUriFromBaseDir,
 } from "./storage/resolver";
 export type {
-  StorageAdapter,
-  StorageReadParams,
-  StorageWriteParams,
-  StorageWriteResult,
+  FileAdapter,
+  FileReadParams,
+  FileWriteParams,
+  FileWriteResult,
+  PersistedToolResult,
   UriOrAdapter,
 } from "./storage/types";
 
-// Storage - adapters
-export { FileStorageAdapter, fileUriToOptions } from "./storage/file";
+// File adapter - implementation
 export {
-  VercelBlobStorageAdapter,
-  vercelBlobUriToOptions,
-} from "./storage/vercelBlob";
+  FileAdapter as FileAdapterClass,
+  fileUriToOptions,
+} from "./storage/file";
+export type { FileAdapterOptions } from "./storage/file";
 
 // Storage - utilities
 export { grepObject } from "./storage/grep";
@@ -32,12 +33,12 @@ export type { GrepResultLine } from "./storage/grep";
 export {
   detectWindowStart,
   messageHasTextContent,
-  writeToolResultsToStorageStrategy,
-} from "./strategies/writeToolResultsToStorage";
+  writeToolResultsToFileStrategy,
+} from "./strategies/writeToolResultsToFile";
 export type {
   Boundary,
-  WriteToolResultsToStorageOptions,
-} from "./strategies/writeToolResultsToStorage";
+  WriteToolResultsToFileOptions,
+} from "./strategies/writeToolResultsToFile";
 
 // Tools
 export { createGrepAndSearchFileTool, createReadFileTool } from "./tools/index";

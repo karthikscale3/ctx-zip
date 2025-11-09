@@ -1,29 +1,27 @@
 import path from "node:path";
-import { FileStorageAdapter, fileUriToOptions } from "./file";
-import type { StorageAdapter, UriOrAdapter } from "./types";
-import { VercelBlobStorageAdapter, vercelBlobUriToOptions } from "./vercelBlob";
+import { FileAdapter, fileUriToOptions } from "./file";
+import type { FileAdapter as IFileAdapter, UriOrAdapter } from "./types";
 
-export function createStorageAdapter(
-  uriOrAdapter?: UriOrAdapter
-): StorageAdapter {
+export function createFileAdapter(uriOrAdapter?: UriOrAdapter): IFileAdapter {
   if (typeof uriOrAdapter === "object" && uriOrAdapter) return uriOrAdapter;
   const uri = typeof uriOrAdapter === "string" ? uriOrAdapter : undefined;
   if (!uri) {
-    return new FileStorageAdapter({ baseDir: process.cwd() });
+    return new FileAdapter({ baseDir: process.cwd() });
   }
   const lower = uri.toLowerCase();
   if (lower.startsWith("file:")) {
     const options = fileUriToOptions(uri);
-    return new FileStorageAdapter(options);
+    return new FileAdapter(options);
   }
-  if (lower.startsWith("blob:")) {
-    const options = vercelBlobUriToOptions(uri);
-    return new VercelBlobStorageAdapter(options);
-  }
-  throw new Error(`Unsupported storage URI: ${uri}`);
+  throw new Error(
+    `Unsupported storage URI: ${uri}. Only file:// URIs are supported.`
+  );
 }
 
-export function resolveFileUriFromBaseDir(baseDir: string): string {
+export function resolveFileUriFromBaseDir(
+  baseDir: string,
+  sessionId?: string
+): string {
   const abs = path.resolve(baseDir);
   return `file://${abs}`;
 }

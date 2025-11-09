@@ -1,10 +1,10 @@
 import type { ModelMessage } from "ai";
-import { createStorageAdapter } from "./storage/resolver";
-import type { StorageAdapter, UriOrAdapter } from "./storage/types";
+import { createFileAdapter } from "./storage/resolver";
+import type { FileAdapter, UriOrAdapter } from "./storage/types";
 import {
-  writeToolResultsToStorageStrategy,
+  writeToolResultsToFileStrategy,
   type Boundary,
-} from "./strategies/writeToolResultsToStorage";
+} from "./strategies/writeToolResultsToFile";
 
 /**
  * Options for compacting a conversation by persisting large tool outputs to storage
@@ -12,30 +12,39 @@ import {
  */
 export interface CompactOptions {
   /**
-   * Compaction strategy to use. Currently only "write-tool-results-to-storage" is supported.
+   * Compaction strategy to use. Currently only "write-tool-results-to-file" is supported.
    */
-  strategy?: "write-tool-results-to-storage" | string;
+  strategy?: "write-tool-results-to-file" | string;
   /**
-   * Storage destination used to persist tool outputs. Accepts either a URI (e.g., "file:", "blob:")
-   * or a StorageAdapter instance. If omitted, a default adapter may be created from the URI.
+   * File system location to persist tool outputs. Accepts either a URI (e.g., "file:///path/to/dir")
+   * or a FileAdapter instance. If omitted, defaults to the current working directory.
    */
-  storage?: UriOrAdapter;
+  baseDir?: UriOrAdapter;
   /**
-   * Controls where the compaction window starts. Defaults to "since-last-assistant-or-user-text".
-   * You can also pass { type: "first-n-messages", count: N } to keep the first N messages intact.
+   * Controls where the compaction window starts. Defaults to "last-turn".
+   * - "last-turn": Compact only the latest turn
+   * - "all": Compact entire conversation
+   * - { type: "keep-first", count: N }: Keep first N messages intact
+   * - { type: "keep-last", count: N }: Keep last N messages intact
    */
   boundary?: Boundary;
   /**
    * Function to convert tool outputs (objects) to strings before writing to storage.
    * Defaults to JSON.stringify(value, null, 2).
    */
-  serializeResult?: (value: unknown) => string;
+  toolResultSerializer?: (value: unknown) => string;
   /**
    * Tool names that are recognized as reading from storage (e.g., read/search tools). Their results
    * will not be re-written; instead, a friendly reference to the source is shown. Provide custom names
    * if you use your own read/search tools.
    */
-  storageReaderToolNames?: string[];
+  fileReaderTools?: string[];
+  /**
+   * Optional session ID to organize persisted tool results.
+   * Files will be organized as: {baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json
+   * If omitted, a random session ID will be generated.
+   */
+  sessionId?: string;
 }
 
 /**
@@ -46,30 +55,30 @@ export async function compactMessages(
   messages: ModelMessage[],
   options: CompactOptions = {}
 ): Promise<ModelMessage[]> {
-  const strategy = options.strategy ?? "write-tool-results-to-storage";
+  const strategy = options.strategy ?? "write-tool-results-to-file";
   // Default: compact only since the last assistant/user text turn
-  const boundary: Boundary =
-    options.boundary ?? "since-last-assistant-or-user-text";
-  const adapter: StorageAdapter = createStorageAdapter(options.storage);
-  const serializeResult =
-    options.serializeResult ?? ((v) => JSON.stringify(v, null, 2));
+  const boundary: Boundary = options.boundary ?? "last-turn";
+  const adapter: FileAdapter = createFileAdapter(options.baseDir);
+  const toolResultSerializer =
+    options.toolResultSerializer ?? ((v) => JSON.stringify(v, null, 2));
 
   switch (strategy) {
-    case "write-tool-results-to-storage":
-      return await writeToolResultsToStorageStrategy(messages, {
+    case "write-tool-results-to-file":
+      return await writeToolResultsToFileStrategy(messages, {
         boundary,
         adapter,
-        serializeResult,
-        storageReaderToolNames: [
+        toolResultSerializer,
+        fileReaderTools: [
           "readFile",
           "grepAndSearchFile",
-          ...(options.storageReaderToolNames ?? []),
+          ...(options.fileReaderTools ?? []),
         ],
+        sessionId: options.sessionId,
       });
     default:
       throw new Error(`Unknown compaction strategy: ${strategy}`);
   }
 }
 
-export type { StorageAdapter } from "./storage/types";
-export type { Boundary } from "./strategies/writeToolResultsToStorage";
+export type { FileAdapter } from "./storage/types";
+export type { Boundary } from "./strategies/writeToolResultsToFile";
