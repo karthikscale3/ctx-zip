@@ -1,6 +1,7 @@
 // Vercel Sandbox provider implementation
 
 import { Sandbox } from "@vercel/sandbox";
+import { randomUUID } from "node:crypto";
 import type {
   CommandResult,
   SandboxCommand,
@@ -23,9 +24,17 @@ export interface VercelSandboxOptions extends SandboxProviderOptions {
 export class VercelSandboxProvider implements SandboxProvider {
   private sandbox: Sandbox;
   private workspacePath: string = "/vercel/sandbox";
+  private id: string;
 
   private constructor(sandbox: Sandbox) {
     this.sandbox = sandbox;
+    const providedId =
+      sandbox && typeof (sandbox as any).id === "string"
+        ? (sandbox as any).id
+        : undefined;
+    this.id = providedId
+      ? `vercel-sandbox-${providedId}`
+      : `vercel-sandbox-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
   }
 
   /**
@@ -66,8 +75,7 @@ export class VercelSandboxProvider implements SandboxProvider {
   }
 
   getId(): string {
-    // Vercel sandbox doesn't expose an ID, so we create a simple identifier
-    return `vercel-sandbox-${Date.now()}`;
+    return this.id;
   }
 
   getWorkspacePath(): string {

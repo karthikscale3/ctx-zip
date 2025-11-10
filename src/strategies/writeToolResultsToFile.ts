@@ -224,20 +224,19 @@ export async function writeToolResultsToFileStrategy(
         let key: string | undefined;
         let storage: string | undefined;
 
-        // Check if output has nested value (AI SDK format)
         const outputData = output?.value ?? output;
-
-        if (outputData) {
-          if (typeof outputData.fileName === "string") {
-            fileName = outputData.fileName;
+        if (outputData && typeof outputData === "object") {
+          if (typeof (outputData as any).fileName === "string") {
+            fileName = (outputData as any).fileName;
           }
-          if (typeof outputData.key === "string") {
-            key = outputData.key;
+          if (typeof (outputData as any).key === "string") {
+            key = (outputData as any).key;
           }
-          if (typeof outputData.storage === "string") {
-            storage = outputData.storage;
+          if (typeof (outputData as any).storage === "string") {
+            storage = (outputData as any).storage;
           }
         }
+
         const display =
           storage && key
             ? `Read from storage: ${formatStoragePathForDisplay(
@@ -245,10 +244,12 @@ export async function writeToolResultsToFileStrategy(
                 key
               )}. Key: ${key}`
             : `Read from file: ${fileName ?? "<unknown>"}`;
+
         part.output = {
           type: "text",
           value: display,
         };
+
         if (storage && key) {
           registerKnownKey(storage, key);
         }
