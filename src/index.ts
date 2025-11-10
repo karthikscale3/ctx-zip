@@ -35,7 +35,7 @@ export type {
   ReadFileToolOptions,
 } from "./tools/index";
 
-// MCP Code Transformer
+// Sandbox Code Generator
 export {
   createExecutionTool,
   createExplorationTools,
@@ -43,7 +43,8 @@ export {
   LocalSandboxProvider,
   MCPSandboxExplorer,
   VercelSandboxProvider,
-} from "./mcp-code-transformer/index";
+  writeToolsToSandbox,
+} from "./sandbox-code-generator/index";
 export type {
   CommandResult,
   E2BSandboxOptions,
@@ -55,5 +56,9 @@ export type {
   SandboxProvider,
   SandboxProviderOptions,
   ServerToolsMap,
+  ToolCodeGenerationOptions,
+  ToolCodeGenerationResult,
   ToolDefinition,
-} from "./mcp-code-transformer/index";
+  ToolMetadata,
+  ToolParameterMetadata,
+} from "./sandbox-code-generator/index";

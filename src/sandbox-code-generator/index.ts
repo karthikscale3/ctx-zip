@@ -20,6 +20,16 @@ export {
   createExecutionTool,
   createExplorationTools,
 } from "./sandbox-tools.js";
+export {
+  writeToolsToSandbox as writeStandardToolsToSandbox,
+  writeToolsToSandbox,
+} from "./tool-code-writer.js";
+export type {
+  ToolCodeGenerationOptions,
+  ToolCodeGenerationResult,
+  ToolMetadata,
+  ToolParameterMetadata,
+} from "./tool-code-writer.js";
 export type {
   MCPServerConfig,
   SandboxExplorerConfig,

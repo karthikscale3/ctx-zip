@@ -36,7 +36,7 @@ import { fetchModels } from "tokenlens";
 import {
   LocalSandboxProvider,
   MCPSandboxExplorer,
-} from "../../src/mcp-code-transformer/index.js";
+} from "../../src/sandbox-code-generator/index.js";
 
 // Load environment variables
 dotenv.config();
