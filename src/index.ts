@@ -25,6 +25,10 @@ export {
 } from "./storage/file";
 export type { FileAdapterOptions } from "./storage/file";
 
+// Sandbox file adapter
+export { SandboxFileAdapter } from "./storage/sandbox-adapter";
+export type { SandboxFileAdapterOptions } from "./storage/sandbox-adapter";
+
 // Storage - utilities
 export { grepObject } from "./storage/grep";
 export type { GrepResultLine } from "./storage/grep";
