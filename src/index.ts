@@ -1,48 +1,32 @@
 // Public API barrel for npm package consumers
 
-// Compaction
-export { compactMessages } from "./compact";
-export type { CompactOptions } from "./compact";
-
-// File adapter - core
+// Tool Results Compactor
 export {
+  compactMessages,
   createFileAdapter,
+  detectWindowStart,
+  FileAdapterClass,
+  fileUriToOptions,
+  grepObject,
+  messageHasTextContent,
   resolveFileUriFromBaseDir,
-} from "./storage/resolver";
+  SandboxFileAdapter,
+  writeToolResultsToFileStrategy,
+} from "./tool-results-compactor/index";
 export type {
+  Boundary,
+  CompactOptions,
   FileAdapter,
+  FileAdapterOptions,
   FileReadParams,
   FileWriteParams,
   FileWriteResult,
+  GrepResultLine,
   PersistedToolResult,
+  SandboxFileAdapterOptions,
   UriOrAdapter,
-} from "./storage/types";
-
-// File adapter - implementation
-export {
-  FileAdapter as FileAdapterClass,
-  fileUriToOptions,
-} from "./storage/file";
-export type { FileAdapterOptions } from "./storage/file";
-
-// Sandbox file adapter
-export { SandboxFileAdapter } from "./storage/sandbox-adapter";
-export type { SandboxFileAdapterOptions } from "./storage/sandbox-adapter";
-
-// Storage - utilities
-export { grepObject } from "./storage/grep";
-export type { GrepResultLine } from "./storage/grep";
-
-// Strategies
-export {
-  detectWindowStart,
-  messageHasTextContent,
-  writeToolResultsToFileStrategy,
-} from "./strategies/writeToolResultsToFile";
-export type {
-  Boundary,
   WriteToolResultsToFileOptions,
-} from "./strategies/writeToolResultsToFile";
+} from "./tool-results-compactor/index";
 
 // Tools
 export { createGrepAndSearchFileTool, createReadFileTool } from "./tools/index";
@@ -51,7 +35,7 @@ export type {
   ReadFileToolOptions,
 } from "./tools/index";
 
-// MCP Sandbox Explorer
+// MCP Code Transformer
 export {
   createExecutionTool,
   createExplorationTools,
@@ -59,7 +43,7 @@ export {
   LocalSandboxProvider,
   MCPSandboxExplorer,
   VercelSandboxProvider,
-} from "./mcp-sandbox/index";
+} from "./mcp-code-transformer/index";
 export type {
   CommandResult,
   E2BSandboxOptions,
@@ -72,4 +56,4 @@ export type {
   SandboxProviderOptions,
   ServerToolsMap,
   ToolDefinition,
-} from "./mcp-sandbox/index";
+} from "./mcp-code-transformer/index";

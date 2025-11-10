@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 import { randomUUID } from "node:crypto";
-import { registerKnownKey } from "../storage/knownKeys";
-import type { FileAdapter, PersistedToolResult } from "../storage/types";
+import { registerKnownKey } from "../file-adapters/knownKeys";
+import type { FileAdapter, PersistedToolResult } from "../file-adapters/types";
 
 function formatStoragePathForDisplay(storageUri: string, key: string): string {
   if (!storageUri) return key;

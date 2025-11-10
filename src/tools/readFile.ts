@@ -1,8 +1,8 @@
 import { tool } from "ai";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { isKnownKey } from "../storage/knownKeys";
-import { createFileAdapter } from "../storage/resolver";
+import { isKnownKey } from "../tool-results-compactor/file-adapters/knownKeys";
+import { createFileAdapter } from "../tool-results-compactor/file-adapters/resolver";
 
 export interface ReadFileToolOptions {
   description?: string;

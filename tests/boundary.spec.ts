@@ -1,11 +1,12 @@
 import type { ModelMessage } from "ai";
 import assert from "node:assert/strict";
-import { compactMessages, type Boundary } from "../src/index";
-import type {
-  FileAdapter,
-  FileWriteParams,
-  FileWriteResult,
-} from "../src/storage/types";
+import {
+  compactMessages,
+  type Boundary,
+  type FileAdapter,
+  type FileWriteParams,
+  type FileWriteResult,
+} from "../src/index";
 
 class MemoryFileAdapter implements FileAdapter {
   public writes: { key: string; body: string; contentType?: string }[] = [];
@@ -205,7 +206,7 @@ async function testFirstNMessages() {
   // Preserve the latest 3 messages; compact the older ones.
   // Latest 3 are indices 10(assistant tool-call), 11(tool fetchData), 12(assistant). So we compact [0..10).
   const { compacted, adapter } = await run({
-    type: "keep-first",
+    type: "keep-last",
     count: 3,
   });
   // One write expected: index 3 (fetchData). Index 7 (readFile) becomes reference. Index 11 is preserved.

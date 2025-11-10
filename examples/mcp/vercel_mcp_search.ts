@@ -25,7 +25,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
-import { MCPSandboxExplorer } from "../../src/mcp-sandbox/index.js";
+import { MCPSandboxExplorer } from "../../src/mcp-code-transformer/index.js";
 
 // Load environment variables
 dotenv.config();

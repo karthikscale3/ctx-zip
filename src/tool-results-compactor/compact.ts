@@ -1,6 +1,6 @@
 import type { ModelMessage } from "ai";
-import { createFileAdapter } from "./storage/resolver";
-import type { FileAdapter, UriOrAdapter } from "./storage/types";
+import { createFileAdapter } from "./file-adapters/resolver";
+import type { FileAdapter, UriOrAdapter } from "./file-adapters/types";
 import {
   writeToolResultsToFileStrategy,
   type Boundary,
@@ -80,5 +80,5 @@ export async function compactMessages(
   }
 }
 
-export type { FileAdapter } from "./storage/types";
+export type { FileAdapter } from "./file-adapters/types";
 export type { Boundary } from "./strategies/writeToolResultsToFile";

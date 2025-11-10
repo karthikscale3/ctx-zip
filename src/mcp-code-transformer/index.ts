@@ -1,4 +1,4 @@
-// MCP Sandbox Explorer - Public API
+// MCP Code Transformer - Public API
 
 export {
   E2BSandboxProvider,

@@ -29,7 +29,7 @@ import { fetchModels } from "tokenlens";
 import {
   E2BSandboxProvider,
   MCPSandboxExplorer,
-} from "../../src/mcp-sandbox/index.js";
+} from "../../src/mcp-code-transformer/index.js";
 
 // Load environment variables
 dotenv.config();

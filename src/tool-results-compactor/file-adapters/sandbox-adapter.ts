@@ -1,4 +1,4 @@
-import type { SandboxProvider } from "../mcp-sandbox/sandbox-provider.js";
+import type { SandboxProvider } from "../../mcp-code-transformer/sandbox-provider.js";
 import type {
   FileReadParams,
   FileWriteParams,
