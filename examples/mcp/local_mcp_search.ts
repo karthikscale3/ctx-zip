@@ -27,12 +27,13 @@
  */
 
 import { getTokenCosts } from "@tokenlens/helpers";
-import { ModelMessage, stepCountIs, streamText } from "ai";
+import { ModelMessage, stepCountIs, streamText, tool } from "ai";
 import dotenv from "dotenv";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
+import { z } from "zod";
 import {
   LocalSandboxProvider,
   SandboxExplorer,
@@ -40,6 +41,23 @@ import {
 
 // Load environment variables
 dotenv.config();
+
+// Define weather tool
+const weatherTool = tool({
+  description: "Get the weather in a location",
+  inputSchema: z.object({
+    location: z.string().describe("The location to get the weather for"),
+  }),
+  async execute({ location }: { location: string }) {
+    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
+    return {
+      location,
+      temperature,
+      units: "°F",
+      generatedAt: new Date().toISOString(),
+    };
+  },
+});
 
 // Stats interface to track conversation metrics
 interface ConversationStats {
@@ -118,8 +136,8 @@ async function main() {
 
   console.log(`📁 Sandbox location: ${sandboxProvider.getAbsolutePath()}`);
 
-  // Initialize MCPSandboxExplorer with local provider and grep-app
-  console.log("🔧 Setting up MCP tools (grep.app)...");
+  // Initialize SandboxExplorer with local provider, MCP tools, and standard tools
+  console.log("🔧 Setting up MCP tools (grep.app) and standard tools...");
   const explorer = await SandboxExplorer.create({
     sandboxProvider,
     servers: [
@@ -128,16 +146,28 @@ async function main() {
         url: "https://mcp.grep.app",
       },
     ],
+    standardTools: {
+      weather: weatherTool,
+    },
+    standardToolOptions: {
+      title: "Local Agent Tools",
+    },
   });
 
   // Generate the file system with MCP tool definitions
   await explorer.generateFileSystem();
 
-  // Get all tools
-  const tools = explorer.getAllTools();
+  // Get all sandbox tools (exploration and execution)
+  const sandboxTools = explorer.getAllTools();
+
+  // Combine sandbox tools with the original weather tool
+  const tools = {
+    ...sandboxTools,
+  };
 
   const workspacePath = sandboxProvider.getWorkspacePath();
   const serversDir = `${workspacePath}/servers`;
+  const localToolsDir = `${workspacePath}/local-tools`;
   const userCodeDir = `${workspacePath}/user-code`;
 
   // Create session ID and messages file path
@@ -171,7 +201,9 @@ async function main() {
   console.log("\n" + "=".repeat(80));
   console.log("🤖 Interactive Local GitHub Search Assistant");
   console.log(`Session: ${sessionId}`);
-  console.log(`Sandbox: Local (.sandbox) | MCP Tools: grep.app`);
+  console.log(
+    `Sandbox: Local (.sandbox) | MCP Tools: grep.app | Standard Tools: weather`
+  );
   console.log("=".repeat(80) + "\n");
 
   if (messages.length > 0) {
@@ -183,6 +215,9 @@ async function main() {
   console.log("💡 Tips:");
   console.log(
     "  - Ask me to search GitHub repositories for code, patterns, or implementations"
+  );
+  console.log(
+    "  - I can check the weather for any location using the weather tool"
   );
   console.log("  - I can read and analyze tool definitions in the sandbox");
   console.log(
@@ -264,10 +299,11 @@ async function main() {
         model: "openai/gpt-4.1-mini",
         tools,
         stopWhen: stepCountIs(10),
-        system: `You are a helpful GitHub search assistant with access to a local sandbox and MCP tools.
+        system: `You are a helpful GitHub search assistant with access to a local sandbox, MCP tools, and standard tools.
 
 Available directories:
 - ${serversDir}: Contains MCP tool definitions (grep-app)
+- ${localToolsDir}: Contains standard tool definitions (weather)
 - ${userCodeDir}: Use this for writing and executing scripts
 
 Available sandbox tools:
@@ -280,6 +316,9 @@ Available sandbox tools:
 - sandbox_edit_file: Edit file in the sandbox
 - sandbox_delete_file: Delete file from the sandbox
 
+Available standard tools:
+- weather: Get weather information for any location
+
 When searching GitHub:
 1. First use sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find to read the tool definitions to understand available search capabilities
 2. Then write a script to perform the task using sandbox_write_file, sandbox_edit_file, sandbox_delete_file
@@ -291,7 +330,9 @@ When searching GitHub:
 
 The sandbox files are persisted locally at: ${sandboxProvider.getAbsolutePath()}
 
-Be conversational and helpful. Guide users through GitHub searches and code exploration.`,
+You can also inspect the weather tool implementation at ${localToolsDir}/weather.ts using sandbox_cat.
+
+Be conversational and helpful. Guide users through GitHub searches, weather queries, and code exploration.`,
         messages,
         onStepFinish: (step) => {
           const { toolCalls } = step;
