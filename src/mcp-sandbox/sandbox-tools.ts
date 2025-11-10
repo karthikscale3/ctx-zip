@@ -473,5 +473,38 @@ This is a system-level error (not a code error). The script couldn't be executed
         }
       },
     }),
+
+    sandbox_delete_file: tool({
+      description: `Delete a file in the user code directory (${userCodeDir}). SECURITY: Only works in user-code directory.`,
+      inputSchema: z.object({
+        filename: z.string().describe("Name of the file to delete"),
+      }),
+      async execute({ filename }) {
+        console.log(`[sandbox_delete_file] ${filename}`);
+        if (!filename || filename.trim() === "") {
+          return "Error: 'filename' parameter is required and cannot be empty.";
+        }
+
+        const filePath = `${userCodeDir}/${filename}`;
+
+        try {
+          await sandboxProvider.runCommand({
+            cmd: "rm",
+            args: [filePath],
+          });
+
+          return `✓ File deleted successfully: ${filePath}`;
+        } catch (error) {
+          console.error(
+            `[sandbox_delete_file] ERROR: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+          return `Error deleting file: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+        }
+      },
+    }),
   };
 }
