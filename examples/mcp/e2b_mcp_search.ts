@@ -1,8 +1,31 @@
-// Example: MCP Sandbox Explorer with E2B and grep.app
-// This demonstrates searching GitHub using E2B as the sandbox provider
+/**
+ * Interactive GitHub Search Assistant with E2B and grep.app
+ *
+ * This example demonstrates an interactive chat interface that uses:
+ * - E2B: Cloud sandbox provider (requires E2B_API_KEY)
+ * - MCP (Model Context Protocol) with grep.app for GitHub search
+ *
+ * Required Environment Variables:
+ * - OPENAI_API_KEY (required)
+ * - E2B_API_KEY (required)
+ *
+ * Usage:
+ *   npm run example:mcp-e2b
+ *
+ * Features:
+ * - Interactive chat loop for exploring GitHub repositories
+ * - Real-time tool execution tracking
+ * - Token usage and cost tracking
+ * - Persistent conversation history
+ */
 
-import { generateText, stepCountIs } from "ai";
+import { getTokenCosts } from "@tokenlens/helpers";
+import { ModelMessage, stepCountIs, streamText } from "ai";
 import dotenv from "dotenv";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import * as readline from "node:readline";
+import { fetchModels } from "tokenlens";
 import {
   E2BSandboxProvider,
   MCPSandboxExplorer,
@@ -11,158 +34,327 @@ import {
 // Load environment variables
 dotenv.config();
 
+// Stats interface to track conversation metrics
+interface ConversationStats {
+  totalMessages: number;
+  apiTokensInput: number;
+  apiTokensOutput: number;
+  apiTokensTotal: number;
+  costUSD: number;
+  toolCallsThisTurn: number;
+  totalToolCalls: number;
+}
+
+/**
+ * Validate required environment variables
+ */
+function validateEnvironment(): { valid: boolean; missing: string[] } {
+  const missing: string[] = [];
+
+  if (!process.env.OPENAI_API_KEY) {
+    missing.push("OPENAI_API_KEY");
+  }
+
+  if (!process.env.E2B_API_KEY) {
+    missing.push("E2B_API_KEY");
+  }
+
+  return {
+    valid: missing.length === 0,
+    missing,
+  };
+}
+
+/**
+ * Load messages from file
+ */
+function loadMessages(messagesFilePath: string): ModelMessage[] {
+  if (existsSync(messagesFilePath)) {
+    const raw = readFileSync(messagesFilePath, "utf-8");
+    return JSON.parse(raw);
+  }
+  return [];
+}
+
+/**
+ * Save messages to file
+ */
+function saveMessages(messagesFilePath: string, messages: ModelMessage[]) {
+  const dir = path.dirname(messagesFilePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  writeFileSync(messagesFilePath, JSON.stringify(messages, null, 2));
+}
+
 async function main() {
-  console.log("🚀 Starting E2B MCP Search Example\n");
+  console.log("\n🚀 Interactive GitHub Search Assistant\n");
+
+  // Validate environment variables
+  const validation = validateEnvironment();
+
+  if (!validation.valid) {
+    console.error("❌ Missing required environment variables:");
+    validation.missing.forEach((varName) => {
+      console.error(`   - ${varName}`);
+    });
+    console.error(
+      "\nPlease set these variables in your .env file or environment.\n"
+    );
+    process.exit(1);
+  }
+
+  console.log("✅ Environment validated\n");
 
   // Create E2B sandbox provider
+  console.log("🔧 Creating E2B sandbox...");
   const sandboxProvider = await E2BSandboxProvider.create({
     timeout: 1800000, // 30 minutes
   });
 
-  try {
-    // Initialize MCPSandboxExplorer with E2B provider and grep-app
-    const explorer = await MCPSandboxExplorer.create({
-      sandboxProvider,
-      servers: [
-        {
-          name: "grep-app",
-          url: "https://mcp.grep.app",
-        },
-      ],
-    });
-
-    // Generate the file system with MCP tool definitions
-    await explorer.generateFileSystem();
-
-    // Get all tools
-    const tools = explorer.getAllTools();
-
-    console.log("\n🤖 Starting AI agent to search GitHub...\n");
-
-    // Simple trajectory tracking
-    let stepCount = 0;
-    const toolCalls: string[] = [];
-
-    const serversDir = `${sandboxProvider.getWorkspacePath()}/servers`;
-    const userCodeDir = `${sandboxProvider.getWorkspacePath()}/user-code`;
-
-    // Let the AI search GitHub
-    const result = await generateText({
-      stopWhen: stepCountIs(10),
-      model: "openai/gpt-4.1-mini",
-      tools,
-      onStepFinish: (step) => {
-        stepCount++;
-        const { toolCalls: calls } = step;
-
-        console.log(`\n📍 Step ${stepCount}`);
-
-        if (calls && calls.length > 0) {
-          calls.forEach((call) => {
-            const toolName = call.toolName;
-            const args = (call as any).args || {};
-            toolCalls.push(toolName);
-            console.log(`   🔧 ${toolName}`);
-            console.log(
-              `   📝 Args: ${JSON.stringify(args, null, 2).substring(0, 200)}`
-            );
-          });
-        }
+  // Initialize MCPSandboxExplorer with E2B provider and grep-app
+  console.log("🔧 Setting up MCP tools (grep.app)...");
+  const explorer = await MCPSandboxExplorer.create({
+    sandboxProvider,
+    servers: [
+      {
+        name: "grep-app",
+        url: "https://mcp.grep.app",
       },
-      prompt: `You have access to an E2B sandbox with GitHub search tools at ${serversDir}.
+    ],
+  });
 
-Your task: Search GitHub for "langtrace" usage in TypeScript files
+  // Generate the file system with MCP tool definitions
+  await explorer.generateFileSystem();
 
-STEPS:
-1. **Read the README** at ${serversDir}/README.md to understand available tools
-   - MUST use: sandbox_cat with file: "${serversDir}/README.md"
+  // Get all tools
+  const tools = explorer.getAllTools();
 
-2. **Read the searchGitHub tool definition** to understand parameters
-   - Use: sandbox_cat with the full path to the tool file
+  const serversDir = `${sandboxProvider.getWorkspacePath()}/servers`;
+  const userCodeDir = `${sandboxProvider.getWorkspacePath()}/user-code`;
 
-3. **Write a search script** in ${userCodeDir} that:
-   - Imports searchGitHub from '../servers/grep-app/index.ts'
-   - Searches for "langtrace" in TypeScript files
-   - Prints the top 10 results with:
-     * Repository name
-     * File path
-     * Code snippet (first 5 lines)
-   - IMPORTANT: Use .ts extensions for imports
+  // Create session ID and messages file path
+  const sessionId = `github-search-${new Date()
+    .toISOString()
+    .slice(0, 10)}-${Date.now().toString(36)}`;
+  const storageDir = path.resolve(process.cwd(), ".ctx-storage-e2b");
+  const messagesFilePath = path.resolve(
+    storageDir,
+    sessionId,
+    "conversation.json"
+  );
 
-4. **Execute the script** using sandbox_exec with the code parameter
+  // Load existing conversation
+  let messages = loadMessages(messagesFilePath);
 
-5. **Display results** - make sure to print the actual search results!
+  // Fetch OpenAI provider data for token/cost calculations
+  const openaiProvider = await fetchModels("openai");
 
-CRITICAL RULES:
-⚠️  ALWAYS provide required parameters:
-  - sandbox_cat REQUIRES "file" parameter (full path)
-  - sandbox_exec REQUIRES "code" parameter (TypeScript code)
-  - NEVER call tools with empty {} parameters
+  // Initialize stats
+  let stats: ConversationStats = {
+    totalMessages: messages.length,
+    apiTokensInput: 0,
+    apiTokensOutput: 0,
+    apiTokensTotal: 0,
+    costUSD: 0,
+    toolCallsThisTurn: 0,
+    totalToolCalls: 0,
+  };
 
-Show me the actual search results!`,
-    });
+  console.log("\n" + "=".repeat(80));
+  console.log("🤖 Interactive GitHub Search Assistant");
+  console.log(`Session: ${sessionId}`);
+  console.log(`Sandbox: E2B | MCP Tools: grep.app`);
+  console.log("=".repeat(80) + "\n");
 
-    console.log("\n\n" + "=".repeat(80));
-    console.log("📊 RESULTS");
-    console.log("=".repeat(80));
-    console.log(`\nTotal Steps: ${stepCount}`);
-    console.log(`Tool Calls: ${toolCalls.join(", ")}`);
-    console.log("\n📝 Agent Response:");
-    console.log(result.text);
-    console.log("\n" + "=".repeat(80));
+  if (messages.length > 0) {
+    console.log(
+      `📝 Loaded ${messages.length} messages from previous session\n`
+    );
+  }
 
-    // Copy the generated script locally for inspection
-    console.log("\n📦 Copying generated script...");
+  console.log("💡 Tips:");
+  console.log(
+    "  - Ask me to search GitHub repositories for code, patterns, or implementations"
+  );
+  console.log("  - I can read and analyze tool definitions in the sandbox");
+  console.log("  - Type 'exit' or 'quit' to end the session\n");
 
-    try {
-      const lsResult = await sandboxProvider.runCommand({
-        cmd: "ls",
-        args: ["-la", userCodeDir],
-      });
+  // Function to display stats
+  function displayStats() {
+    console.log("\n" + "-".repeat(80));
+    console.log("📊 Stats:");
+    console.log(`  Messages: ${stats.totalMessages}`);
+    console.log(`  Tool Calls (this turn): ${stats.toolCallsThisTurn}`);
+    console.log(`  Total Tool Calls: ${stats.totalToolCalls}`);
+    console.log(`  Last API Call:`);
+    console.log(`    Input: ${stats.apiTokensInput} tokens`);
+    console.log(`    Output: ${stats.apiTokensOutput} tokens`);
+    console.log(`    Total: ${stats.apiTokensTotal} tokens`);
+    console.log(`    Cost: $${stats.costUSD.toFixed(6)}`);
+    console.log("-".repeat(80) + "\n");
+  }
 
-      if (lsResult.exitCode === 0) {
-        const files = (await lsResult.stdout())
-          .split("\n")
-          .filter((line) => line.includes(".ts"))
-          .map((line) => line.split(/\s+/).pop())
-          .filter(Boolean);
+  // Create readline interface
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: "You: ",
+  });
 
-        if (files.length > 0) {
-          console.log(`\nFound ${files.length} generated file(s):`);
+  // Display initial stats
+  displayStats();
 
-          for (const file of files) {
-            const catResult = await sandboxProvider.runCommand({
-              cmd: "cat",
-              args: [`${userCodeDir}/${file}`],
-            });
-
-            if (catResult.exitCode === 0) {
-              const content = await catResult.stdout();
-              console.log(`\n${"=".repeat(60)}`);
-              console.log(`📄 ${file}`);
-              console.log("=".repeat(60));
-              console.log(content);
-              console.log("=".repeat(60));
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.log("Note: Could not copy scripts (this is okay)");
-    }
-
-    // Cleanup
-    console.log("\n🧹 Cleaning up...");
+  // Cleanup function
+  const cleanup = async () => {
+    rl.close();
+    console.log("\n🧹 Cleaning up E2B sandbox...");
     await explorer.cleanup();
     console.log("✅ Done!\n");
-  } catch (error) {
-    console.error("❌ Error:", error);
-    await sandboxProvider.stop();
-    process.exit(1);
-  }
+  };
+
+  // Main chat loop
+  rl.prompt();
+
+  rl.on("line", async (line: string) => {
+    const userInput = line.trim();
+
+    if (!userInput) {
+      rl.prompt();
+      return;
+    }
+
+    // Check for exit command
+    if (
+      userInput.toLowerCase() === "exit" ||
+      userInput.toLowerCase() === "quit"
+    ) {
+      await cleanup();
+      console.log("👋 Goodbye!");
+      process.exit(0);
+    }
+
+    // Display user message
+    console.log(`\nYou: ${userInput}`);
+
+    // Add user message to conversation
+    messages.push({
+      role: "user",
+      content: userInput,
+    });
+
+    try {
+      // Reset tool call counter
+      stats.toolCallsThisTurn = 0;
+
+      // Stream the response with tool call tracking
+      const result = streamText({
+        model: "openai/gpt-4.1-mini",
+        tools,
+        stopWhen: stepCountIs(10),
+        system: `You are a helpful GitHub search assistant with access to an E2B sandbox and MCP tools.
+
+Available directories:
+- ${serversDir}: Contains MCP tool definitions (grep-app)
+- ${userCodeDir}: Use this for writing and executing scripts
+
+Available sandbox tools:
+- sandbox_cat: Read files (e.g., README.md, tool definitions)
+- sandbox_exec: Execute TypeScript code in the sandbox
+- sandbox_write: Write files to the sandbox
+
+When searching GitHub:
+1. You can read tool definitions to understand available search capabilities
+2. You can write and execute TypeScript scripts that import MCP tools
+3. Always show actual results, not just confirmation of execution
+
+Be conversational and helpful. Guide users through GitHub searches and code exploration.`,
+        messages,
+        onStepFinish: (step) => {
+          const { toolCalls } = step;
+          if (toolCalls && toolCalls.length > 0) {
+            stats.toolCallsThisTurn += toolCalls.length;
+            stats.totalToolCalls += toolCalls.length;
+
+            console.log(`\n🔧 Tool Calls:`);
+            toolCalls.forEach((call) => {
+              const toolName = call.toolName;
+              const args = (call as any).args || {};
+              console.log(`   - ${toolName}`);
+              const argsStr = JSON.stringify(args, null, 2);
+              if (argsStr.length > 200) {
+                console.log(`     ${argsStr.substring(0, 200)}...`);
+              } else {
+                console.log(`     ${argsStr}`);
+              }
+            });
+            console.log("");
+          }
+        },
+      });
+
+      // Stream the assistant response in real-time
+      process.stdout.write("Assistant: ");
+      let streamedText = "";
+
+      for await (const textPart of result.textStream) {
+        streamedText += textPart;
+        process.stdout.write(textPart);
+      }
+
+      // Add final newline
+      console.log("\n");
+
+      // Get the response and actual token usage
+      const response = await result.response;
+      const responseMessages = response.messages;
+      const actualUsage = await result.usage;
+
+      if (actualUsage && openaiProvider) {
+        const modelId = "openai/gpt-4.1-mini";
+        const costs = getTokenCosts(modelId, actualUsage, openaiProvider);
+
+        const inputTokens = actualUsage.inputTokens || 0;
+        const outputTokens = actualUsage.outputTokens || 0;
+        const totalTokens =
+          actualUsage.totalTokens || inputTokens + outputTokens;
+
+        stats.apiTokensInput = inputTokens;
+        stats.apiTokensOutput = outputTokens;
+        stats.apiTokensTotal = totalTokens;
+        stats.costUSD = costs.totalUSD || 0;
+      }
+
+      // Append NEW response messages to the conversation
+      for (const msg of responseMessages) {
+        messages.push(msg);
+      }
+
+      // Update message count
+      stats.totalMessages = messages.length;
+
+      // Save to file
+      saveMessages(messagesFilePath, messages);
+
+      // Display updated stats
+      displayStats();
+    } catch (error: any) {
+      console.error(`\n❌ Error: ${error.message}\n`);
+    }
+
+    // Prompt for next input
+    rl.prompt();
+  });
+
+  // Handle Ctrl+C to exit
+  rl.on("SIGINT", async () => {
+    await cleanup();
+    console.log("\n👋 Goodbye!");
+    process.exit(0);
+  });
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error("❌ Error:", error);
   process.exit(1);
 });
