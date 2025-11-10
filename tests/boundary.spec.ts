@@ -170,7 +170,7 @@ async function testSinceLastAssistantOrUserText() {
     const p = t.content[0];
     assert.equal(p.type, "tool-result");
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Written to (file|storage):/);
+    assert.match(p.output.value, /Written to file:/);
   }
 }
 
@@ -184,21 +184,21 @@ async function testEntireConversation() {
     const t = compacted[3] as any;
     const p = t.content[0];
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Written to (file|storage):/);
+    assert.match(p.output.value, /Written to file:/);
   }
-  // Index 5 shows reference to storage, not a write
+  // Index 5 shows reference to file, not a write
   {
     const t = compacted[7] as any;
     const p = t.content[0];
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Read from (storage|file):/);
+    assert.match(p.output.value, /Read from file:/);
   }
   // Index 8 written
   {
     const t = compacted[11] as any;
     const p = t.content[0];
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Written to (file|storage):/);
+    assert.match(p.output.value, /Written to file:/);
   }
 }
 
@@ -216,14 +216,14 @@ async function testFirstNMessages() {
     const t = compacted[3] as any;
     const p = t.content[0];
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Written to (file|storage):/);
+    assert.match(p.output.value, /Written to file:/);
   }
   // Index 5 becomes a reference text (readFile inside window)
   {
     const t = compacted[7] as any;
     const p = t.content[0];
     assert.equal(p.output.type, "text");
-    assert.match(p.output.value, /Read from (storage|file):/);
+    assert.match(p.output.value, /Read from file:/);
   }
   // Index 11 remains JSON (preserved due to latest N)
   {

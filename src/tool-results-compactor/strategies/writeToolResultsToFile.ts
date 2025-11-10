@@ -110,16 +110,11 @@ export function detectWindowRange(
   boundary: Boundary
 ): { start: number; endExclusive: number } {
   const len = Array.isArray(messages) ? messages.length : 0;
-  const lastIndex = Math.max(0, len - 1);
   if (len <= 1) return { start: 0, endExclusive: 0 };
 
   // Preserve the first N messages; compact everything after them.
-  if (
-    typeof boundary === "object" &&
-    boundary !== null &&
-    (boundary as any).type === "keep-first"
-  ) {
-    const countRaw = (boundary as any).count;
+  if (typeof boundary === "object" && boundary.type === "keep-first") {
+    const countRaw = boundary.count;
     const n = Number.isFinite(countRaw)
       ? Math.max(0, Math.floor(countRaw as number))
       : 0;
@@ -129,12 +124,8 @@ export function detectWindowRange(
   }
 
   // Preserve the last N messages; compact everything before them.
-  if (
-    typeof boundary === "object" &&
-    boundary !== null &&
-    (boundary as any).type === "keep-last"
-  ) {
-    const countRaw = (boundary as any).count;
+  if (typeof boundary === "object" && boundary.type === "keep-last") {
+    const countRaw = boundary.count;
     const n = Number.isFinite(countRaw)
       ? Math.max(0, Math.floor(countRaw as number))
       : 0;
@@ -239,7 +230,7 @@ export async function writeToolResultsToFileStrategy(
 
         const display =
           storage && key
-            ? `Read from storage: ${formatStoragePathForDisplay(
+            ? `Read from file: ${formatStoragePathForDisplay(
                 storage,
                 key
               )}. Key: ${key}`
@@ -278,7 +269,7 @@ export async function writeToolResultsToFileStrategy(
       if (typeof outputValue === "string") {
         if (
           outputValue.startsWith("Written to file:") ||
-          outputValue.startsWith("Read from storage:")
+          outputValue.startsWith("Read from file:")
         ) {
           continue;
         }
@@ -289,7 +280,7 @@ export async function writeToolResultsToFileStrategy(
       ) {
         if (
           output.value.startsWith("Written to file:") ||
-          output.value.startsWith("Read from storage:")
+          output.value.startsWith("Read from file:")
         ) {
           continue;
         }
