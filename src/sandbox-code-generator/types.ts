@@ -1,9 +1,11 @@
 // Type definitions for MCP Sandbox Explorer
 
+import type { Tool } from "ai";
 import type {
   SandboxProvider,
   SandboxProviderOptions,
 } from "./sandbox-provider.js";
+import type { ToolCodeGenerationOptions } from "./tool-code-writer.js";
 
 export interface MCPServerConfig {
   name: string;
@@ -13,9 +15,20 @@ export interface MCPServerConfig {
 }
 
 export interface SandboxExplorerConfig {
-  servers: MCPServerConfig[];
   /**
-   * Custom sandbox provider. If not provided, defaults to VercelSandboxProvider
+   * MCP servers to fetch tools from.
+   */
+  servers?: MCPServerConfig[];
+  /**
+   * Regular AI SDK tools to transform into sandbox code.
+   */
+  standardTools?: Record<string, Tool<any, any>>;
+  /**
+   * Options for regular AI SDK tool code generation.
+   */
+  standardToolOptions?: ToolCodeGenerationOptions;
+  /**
+   * Custom sandbox provider. If not provided, defaults to LocalSandboxProvider
    */
   sandboxProvider?: SandboxProvider;
   /**

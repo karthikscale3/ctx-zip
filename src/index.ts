@@ -41,9 +41,8 @@ export {
   createExplorationTools,
   E2BSandboxProvider,
   LocalSandboxProvider,
-  MCPSandboxExplorer,
+  SandboxExplorer,
   VercelSandboxProvider,
-  writeToolsToSandbox,
 } from "./sandbox-code-generator/index";
 export type {
   CommandResult,

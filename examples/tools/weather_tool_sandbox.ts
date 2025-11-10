@@ -2,7 +2,7 @@
  * Weather Tool Sandbox Demo
  *
  * This example shows how to turn an AI SDK tool into source code inside a sandbox
- * using `writeToolsToSandbox`. It supports all three sandbox providers shipped
+ * using the unified `SandboxExplorer`. It supports all three sandbox providers shipped
  * with ctx-zip (local filesystem, Vercel Sandbox, and E2B).
  *
  * Usage:
@@ -23,9 +23,10 @@ import { z } from "zod";
 import {
   E2BSandboxProvider,
   LocalSandboxProvider,
+  SandboxExplorer,
   VercelSandboxProvider,
-  writeToolsToSandbox,
   type SandboxProvider,
+  type ToolCodeGenerationResult,
 } from "../../src/index.js";
 
 type ProviderName = "local" | "vercel" | "e2b";
@@ -74,13 +75,26 @@ async function main() {
 
   for (const providerName of providerSequence) {
     console.log(`\n=== ${providerName.toUpperCase()} SANDBOX ===`);
-    let provider: SandboxProvider | undefined;
+
+    let sandboxProvider: SandboxProvider | undefined;
+    let explorer: SandboxExplorer | undefined;
 
     try {
-      provider = await createProvider(providerName);
+      sandboxProvider = await createProvider(providerName);
+      explorer = await SandboxExplorer.create({
+        sandboxProvider,
+        standardTools: {
+          weather: weatherTool,
+        },
+        standardToolOptions: {
+          title: "Weather Agent Tool",
+        },
+      });
+
+      await runWeatherDemo(explorer, providerName, sampleLocation);
     } catch (error) {
       console.error(
-        `✗ Failed to create ${providerName} sandbox: ${
+        `✗ Error while running demo in ${providerName} sandbox: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
@@ -94,20 +108,13 @@ async function main() {
           "  • Ensure @vercel/sandbox is installed and you have access to Vercel Sandbox."
         );
       }
-      continue;
-    }
-
-    try {
-      await runWeatherDemo(provider, providerName, sampleLocation);
-    } catch (error) {
-      console.error(
-        `✗ Error while running demo in ${providerName} sandbox: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
     } finally {
       try {
-        await provider.stop();
+        if (explorer) {
+          await explorer.cleanup();
+        } else if (sandboxProvider) {
+          await sandboxProvider.stop();
+        }
       } catch (stopError) {
         console.error(
           `⚠️  Error while stopping ${providerName} sandbox: ${
@@ -152,21 +159,22 @@ async function createProvider(
 }
 
 async function runWeatherDemo(
-  provider: SandboxProvider,
+  explorer: SandboxExplorer,
   providerName: ProviderName,
   location: string
 ) {
+  await explorer.generateFileSystem();
+
+  const provider = explorer.getSandboxProvider();
   console.log(`→ Workspace path: ${provider.getWorkspacePath()}`);
 
-  const generationResult = await writeToolsToSandbox(
-    provider,
-    {
-      weather: weatherTool,
-    },
-    {
-      title: "Weather Agent Tool",
-    }
-  );
+  const generationResult: ToolCodeGenerationResult | undefined =
+    explorer.getStandardToolsResult();
+
+  if (!generationResult) {
+    console.warn("⚠️  No standard tools were generated.");
+    return;
+  }
 
   console.log("→ Generated files:");
   generationResult.files.forEach((file) => console.log(`   • ${file}`));

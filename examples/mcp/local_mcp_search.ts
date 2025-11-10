@@ -35,7 +35,7 @@ import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
 import {
   LocalSandboxProvider,
-  MCPSandboxExplorer,
+  SandboxExplorer,
 } from "../../src/sandbox-code-generator/index.js";
 
 // Load environment variables
@@ -120,7 +120,7 @@ async function main() {
 
   // Initialize MCPSandboxExplorer with local provider and grep-app
   console.log("🔧 Setting up MCP tools (grep.app)...");
-  const explorer = await MCPSandboxExplorer.create({
+  const explorer = await SandboxExplorer.create({
     sandboxProvider,
     servers: [
       {

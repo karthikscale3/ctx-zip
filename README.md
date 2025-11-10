@@ -162,24 +162,25 @@ prepareStep: async ({ messages }) => {
 
 ---
 
-### Technique 2: Progressive Tool Discovery (MCP Sandbox Explorer)
+### Technique 2: Progressive Tool Discovery & Code Generation
 
-**What it does**: Transforms MCP tool definitions into a discoverable file system in a sandbox, enabling agents to explore and use tools on-demand instead of loading all definitions upfront.
+**What it does**: Transforms both MCP tools and standard AI SDK tools into inspectable source code inside a sandbox, enabling agents to explore tool implementations on-demand instead of loading all definitions upfront.
 
 **How it works**:
-1. Connects to MCP servers and fetches tool definitions
-2. Converts JSON Schema to TypeScript modules with JSDoc documentation
-3. Generates a file system in a sandbox (Vercel, E2B, or Local)
+1. **For MCP tools**: Connects to MCP servers, fetches tool definitions, and converts JSON Schema to TypeScript modules
+2. **For AI SDK tools**: Extracts tool code, schema, and metadata from in-process tool definitions
+3. Generates a file system in a sandbox (Vercel, E2B, or Local) with full source code
 4. Provides exploration tools (ls, cat, grep, find) for progressive discovery
 5. Enables code execution in the sandbox, letting agents compose multiple tool calls and process data before returning results
 
 **The Problem It Solves**:
 
-Traditional MCP integration loads all tool definitions upfront. With hundreds or thousands of tools across multiple servers:
+Traditional tool integration loads all definitions upfront. With hundreds or thousands of tools:
 - Tool schemas consume hundreds of thousands of tokens before your prompt
 - Every tool definition passes through the model context
 - Intermediate tool results bloat the conversation
 - Costs and latency increase dramatically
+- Agents can't inspect tool implementations to understand behavior
 
 **The Solution**:
 
@@ -192,25 +193,31 @@ Instead of loading everything upfront:
 
 **Result**: 80%+ reduction in token usage for complex multi-tool workflows.
 
-**Example**:
+**Example 1: MCP Tools**:
 
 ```typescript
 import { generateText, stepCountIs } from "ai";
-import { MCPSandboxExplorer } from "ctx-zip";
+import { SandboxExplorer, VercelSandboxProvider } from "ctx-zip";
 
 // Initialize with MCP servers
-const explorer = await MCPSandboxExplorer.create({
+const sandboxProvider = await VercelSandboxProvider.create({
+  timeout: 1800000,
+  runtime: "node22",
+  vcpus: 4,
+});
+
+const explorer = await SandboxExplorer.create({
+  sandboxProvider,
   servers: [
     { name: "grep-app", url: "https://mcp.grep.app" },
-    { 
-      name: "linear", 
+    {
+      name: "linear",
       url: "https://mcp.linear.app/mcp",
       headers: {
         Authorization: `Bearer ${process.env.LINEAR_OAUTH_TOKEN}`,
       },
     },
   ],
-  // Uses Vercel sandbox by default
 });
 
 // Generate file system with tool definitions
@@ -233,7 +240,63 @@ console.log(result.text);
 await explorer.cleanup();
 ```
 
+**Example 2: Standard AI SDK Tools**:
+
+```typescript
+import { generateText, stepCountIs, tool } from "ai";
+import { z } from "zod";
+import { SandboxExplorer } from "ctx-zip";
+
+// Define your tools
+const weatherTool = tool({
+  description: "Get the weather in a location",
+  inputSchema: z.object({
+    location: z.string().describe("The location to get the weather for"),
+  }),
+  async execute({ location }) {
+    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
+    return { location, temperature, units: "°F" };
+  },
+});
+
+// Create a sandbox explorer that only has standard tools
+const explorer = await SandboxExplorer.create({
+  standardTools: {
+    weather: weatherTool,
+  },
+  standardToolOptions: {
+    title: "Weather Agent Tools",
+  },
+});
+
+await explorer.generateFileSystem();
+
+const sandboxProvider = explorer.getSandboxProvider();
+const explorationTools = explorer.getAllTools();
+const standardToolsInfo = explorer.getStandardToolsResult();
+
+console.log(`Generated files: ${standardToolsInfo?.files.length ?? 0}`);
+console.log(`Inspect source at: ${standardToolsInfo?.outputDir ?? "(unknown)"}`);
+
+const response = await generateText({
+  model: "openai/gpt-4.1-mini",
+  tools: {
+    ...explorationTools, // sandbox_ls, sandbox_cat, ...
+    weather: weatherTool,
+  },
+  stopWhen: stepCountIs(10),
+  prompt: `Inspect the weather tool implementation in ./local-tools/weather.ts
+and then tell me the forecast for Tokyo using the weather tool.`,
+});
+
+console.log(response.text);
+
+await explorer.cleanup();
+```
+
 **How Tool Transformation Works**:
+
+**For MCP Tools**:
 
 1. **Fetch**: Connects to MCP servers via HTTP/SSE and calls `listTools()`
 2. **Convert**: Transforms JSON Schema to TypeScript interfaces with:
@@ -264,6 +327,27 @@ await explorer.cleanup();
    return filtered;
    ```
 
+**For AI SDK Tools**:
+
+1. **Extract**: Reads tool metadata (description, schema, execute function)
+2. **Convert**: Generates TypeScript source with:
+   - Full parameter metadata and type information
+   - TypeScript interfaces from Zod schemas
+   - Original execute function preserved as source code
+   - JSDoc comments with parameter descriptions
+3. **Generate**: Creates a file tree:
+   ```
+   local-tools/
+   ├── weather.ts       # Tool implementation + metadata
+   ├── index.ts         # Re-exports
+   └── README.md        # Documentation with schema tables
+   ```
+4. **Inspect**: Agents can read the source to understand:
+   - Exact implementation logic
+   - Parameter requirements and types
+   - Expected return values
+   - Tool behavior and side effects
+
 **Available Sandbox Tools**:
 
 - **sandbox_ls**: List directory contents
@@ -274,45 +358,46 @@ await explorer.cleanup();
 
 **Sandbox Providers**:
 
-**Vercel Sandbox** (Default):
+**Vercel Sandbox**:
 ```typescript
-import { MCPSandboxExplorer } from "ctx-zip";
+import { SandboxExplorer, VercelSandboxProvider } from "ctx-zip";
 
-const explorer = await MCPSandboxExplorer.create({
+const provider = await VercelSandboxProvider.create({
+  timeout: 1800000,
+  runtime: "node22",
+  vcpus: 4,
+});
+
+const explorer = await SandboxExplorer.create({
+  sandboxProvider: provider,
   servers: [/* ... */],
-  sandboxOptions: {
-    timeout: 1800000,  // 30 minutes
-    runtime: "node22",
-    vcpus: 4,
-  },
 });
 ```
 
 **E2B Sandbox**:
 ```typescript
-import { MCPSandboxExplorer, E2BSandboxProvider } from "ctx-zip";
+import { SandboxExplorer, E2BSandboxProvider } from "ctx-zip";
 
 const provider = await E2BSandboxProvider.create({
   apiKey: process.env.E2B_API_KEY,
 });
 
-const explorer = await MCPSandboxExplorer.create({
-  servers: [/* ... */],
+const explorer = await SandboxExplorer.create({
   sandboxProvider: provider,
+  servers: [/* ... */],
 });
 ```
 
-**Local Sandbox** (For Development):
+**Local Sandbox (Default)**:
 ```typescript
-import { MCPSandboxExplorer, LocalSandboxProvider } from "ctx-zip";
+import { SandboxExplorer } from "ctx-zip";
 
-const provider = await LocalSandboxProvider.create({
-  sandboxDir: "./.sandbox", // Inspect files directly!
-});
-
-const explorer = await MCPSandboxExplorer.create({
+const explorer = await SandboxExplorer.create({
   servers: [/* ... */],
-  sandboxProvider: provider,
+  sandboxOptions: {
+    sandboxDir: "./.sandbox",
+    cleanOnCreate: false,
+  },
 });
 ```
 
@@ -330,7 +415,7 @@ const explorer = await MCPSandboxExplorer.create({
 MCP servers requiring authentication can be configured with headers:
 
 ```typescript
-const explorer = await MCPSandboxExplorer.create({
+const explorer = await SandboxExplorer.create({
   servers: [
     {
       name: "linear",
@@ -403,7 +488,9 @@ Files will be organized as:
 
 ## Combining Techniques
 
-For maximum effectiveness, combine both techniques:
+For maximum effectiveness, combine both techniques. You can also mix MCP tools with standard AI SDK tools.
+
+### Example: Compaction with Progressive Discovery
 
 ```typescript
 import { generateText, stepCountIs } from "ai";
@@ -411,11 +498,11 @@ import {
   compactMessages,
   createReadFileTool,
   createGrepAndSearchFileTool,
-  MCPSandboxExplorer,
+  SandboxExplorer,
 } from "ctx-zip";
 
 // 1. Set up MCP Sandbox Explorer for progressive tool discovery
-const explorer = await MCPSandboxExplorer.create({
+const explorer = await SandboxExplorer.create({
   servers: [
     { name: "grep-app", url: "https://mcp.grep.app" },
   ],
@@ -460,6 +547,94 @@ This approach:
 - Preserves recent context while compacting older messages
 - Provides reader tools for on-demand access to persisted data
 
+### Example: Combining MCP Tools with Standard AI SDK Tools
+
+```typescript
+import { generateText, stepCountIs, tool } from "ai";
+import { z } from "zod";
+import {
+  SandboxExplorer,
+} from "ctx-zip";
+
+// Define your local tools
+const weatherTool = tool({
+  description: "Get the weather in a location",
+  inputSchema: z.object({
+    location: z.string().describe("The location to get the weather for"),
+  }),
+  async execute({ location }) {
+    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
+    return { location, temperature, units: "°F" };
+  },
+});
+
+const calculatorTool = tool({
+  description: "Perform basic arithmetic operations",
+  inputSchema: z.object({
+    operation: z.enum(["add", "subtract", "multiply", "divide"]),
+    a: z.number(),
+    b: z.number(),
+  }),
+  async execute({ operation, a, b }) {
+    switch (operation) {
+      case "add":
+        return { result: a + b };
+      case "subtract":
+        return { result: a - b };
+      case "multiply":
+        return { result: a * b };
+      case "divide":
+        return { result: a / b };
+    }
+  },
+});
+
+// Unified sandbox explorer with both MCP and standard tools
+const explorer = await SandboxExplorer.create({
+  servers: [
+    { name: "grep-app", url: "https://mcp.grep.app" },
+  ],
+  standardTools: {
+    weather: weatherTool,
+    calculator: calculatorTool,
+  },
+  standardToolOptions: {
+    title: "Local AI SDK Tools",
+  },
+});
+
+await explorer.generateFileSystem();
+
+const sandboxTools = explorer.getAllTools();
+
+const result = await generateText({
+  model: "openai/gpt-4.1-mini",
+  tools: {
+    ...sandboxTools, // Sandbox exploration tools (ls, cat, grep, exec)
+    weather: weatherTool, // Original local tools
+    calculator: calculatorTool,
+  },
+  stopWhen: stepCountIs(20),
+  prompt: `You have access to:
+  - MCP tools from grep.app (in ./servers/)
+  - Local tools (weather, calculator) with source code in ./local-tools/
+  
+  First, use sandbox_ls to explore available tools, then search GitHub for
+  weather-related code and calculate the average temperature.`,
+});
+
+console.log(result.text);
+
+await explorer.cleanup();
+```
+
+This approach:
+- **MCP tools**: Transformed and available for exploration in `./servers/`
+- **AI SDK tools**: Transformed and available for inspection in `./local-tools/`
+- **Single sandbox**: Both tool types coexist in the same environment
+- **Agent can explore**: Use `sandbox_cat` to understand any tool implementation
+- **Tool composition**: Write scripts that use both MCP and local tools together
+
 ---
 
 ## API Reference
@@ -475,12 +650,18 @@ This approach:
 - **`createReadFileTool(options?)`**: Tool for reading persisted files
 - **`createGrepAndSearchFileTool(options?)`**: Tool for searching persisted files
 
-### MCP Sandbox Explorer
+### Sandbox Code Generation
 
-- **`MCPSandboxExplorer.create(config)`**: Initialize sandbox explorer
-- **`MCPSandboxExplorer.generateFileSystem()`**: Fetch tools and generate file system
-- **`MCPSandboxExplorer.getAllTools()`**: Get all exploration and execution tools
-- **`MCPSandboxExplorer.cleanup()`**: Stop sandbox and clean up
+**MCP Tools**:
+- **`SandboxExplorer.create(config)`**: Initialize sandbox explorer
+- **`SandboxExplorer.generateFileSystem()`**: Fetch MCP tools, generate code, and write standard tools
+- **`SandboxExplorer.getAllTools()`**: Get all exploration and execution tools
+- **`SandboxExplorer.cleanup()`**: Stop sandbox and clean up
+
+**Standard Tool Generation**:
+- Configure `standardTools` and `standardToolOptions` when calling `SandboxExplorer.create({ ... })`
+- **`ToolCodeGenerationOptions`**: Configuration for tool code generation
+- **`ToolCodeGenerationResult`**: Result with file paths and metadata
 
 ### Sandbox Providers
 
@@ -506,11 +687,19 @@ This approach:
 
 The library includes complete working examples:
 
+**MCP Tool Transformation**:
 ```bash
-# MCP Sandbox Explorer examples
-npm run example:mcp-vercel  # Vercel sandbox
-npm run example:mcp-e2b     # E2B sandbox
-npm run example:mcp-local   # Local sandbox (great for debugging)
+npm run example:mcp-vercel  # MCP tools with Vercel sandbox
+npm run example:mcp-e2b     # MCP tools with E2B sandbox
+npm run example:mcp-local   # MCP tools with Local sandbox (great for debugging)
+```
+
+**AI SDK Tool Transformation**:
+```bash
+npm run example:tools-weather          # Weather tool (all providers)
+npm run example:tools-weather-local    # Weather tool with local sandbox
+npm run example:tools-weather-vercel   # Weather tool with Vercel sandbox
+npm run example:tools-weather-e2b      # Weather tool with E2B sandbox
 ```
 
 See the [`examples/`](./examples/) directory for detailed examples with comments.

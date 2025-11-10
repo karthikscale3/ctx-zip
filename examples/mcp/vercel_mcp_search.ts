@@ -25,7 +25,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
-import { MCPSandboxExplorer } from "../../src/sandbox-code-generator/index.js";
+import {
+  SandboxExplorer,
+  VercelSandboxProvider,
+} from "../../src/sandbox-code-generator/index.js";
 
 // Load environment variables
 dotenv.config();
@@ -100,18 +103,20 @@ async function main() {
 
   // Initialize with Vercel sandbox and grep-app
   console.log("🔧 Creating Vercel sandbox...");
-  const explorer = await MCPSandboxExplorer.create({
+  const sandboxProvider = await VercelSandboxProvider.create({
+    timeout: 1800000, // 30 minutes
+    runtime: "node22",
+    vcpus: 4,
+  });
+
+  const explorer = await SandboxExplorer.create({
+    sandboxProvider,
     servers: [
       {
         name: "grep-app",
         url: "https://mcp.grep.app",
       },
     ],
-    sandboxOptions: {
-      timeout: 1800000, // 30 minutes
-      runtime: "node22",
-      vcpus: 4,
-    },
   });
 
   // Generate the file system with MCP tool definitions
@@ -121,7 +126,6 @@ async function main() {
   // Get all tools
   const tools = explorer.getAllTools();
 
-  const sandboxProvider = explorer.getSandboxProvider();
   const serversDir = `${sandboxProvider.getWorkspacePath()}/servers`;
   const userCodeDir = `${sandboxProvider.getWorkspacePath()}/user-code`;
 

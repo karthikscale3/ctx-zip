@@ -1,4 +1,4 @@
-// MCP Code Transformer - Public API
+// Sandbox Code Generator - Public API
 
 export {
   E2BSandboxProvider,
@@ -8,7 +8,7 @@ export {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
-export { MCPSandboxExplorer } from "./mcp-sandbox-explorer.js";
+export { SandboxExplorer } from "./sandbox-explorer.js";
 export type {
   CommandResult,
   SandboxCommand,
@@ -20,10 +20,6 @@ export {
   createExecutionTool,
   createExplorationTools,
 } from "./sandbox-tools.js";
-export {
-  writeToolsToSandbox as writeStandardToolsToSandbox,
-  writeToolsToSandbox,
-} from "./tool-code-writer.js";
 export type {
   ToolCodeGenerationOptions,
   ToolCodeGenerationResult,
