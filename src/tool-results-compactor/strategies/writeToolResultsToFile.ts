@@ -5,8 +5,8 @@ import type { FileAdapter, PersistedToolResult } from "../file-adapters/types";
 
 function formatStoragePathForDisplay(storageUri: string, key: string): string {
   if (!storageUri) return key;
-  // For file:// URIs, show the full path
-  if (storageUri.startsWith("file://")) {
+  // For file:// and sandbox:// URIs, show the full path
+  if (storageUri.startsWith("file://") || storageUri.startsWith("sandbox://")) {
     const base = storageUri.replace(/\/$/, "");
     return `${base}/${key}`;
   }

@@ -95,11 +95,8 @@ export class SandboxFileAdapter implements IFileAdapter {
   }
 
   toString(): string {
-    const parts = [
-      `sandbox://${this.sandboxProvider.getId()}`,
-      this.workspacePath,
-    ];
-    if (this.prefix) parts.push(this.prefix);
-    return parts.join("/");
+    // Use a custom scheme that uniquely identifies this sandbox adapter
+    // Format: sandbox://{sandboxId}
+    return `sandbox://${this.sandboxProvider.getId()}`;
   }
 }
