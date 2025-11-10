@@ -64,7 +64,7 @@ export class FileAdapter implements IFileAdapter {
   toString(): string {
     const parts = [this.baseDir];
     if (this.prefix) parts.push(this.prefix);
-    if (this.sessionId) parts.push(this.sessionId, "tool-results");
+    // Don't include sessionId here - it's already part of resolved keys
     return `file://${parts.join("/")}`;
   }
 }

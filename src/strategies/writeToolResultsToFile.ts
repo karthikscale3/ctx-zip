@@ -223,25 +223,19 @@ export async function writeToolResultsToFileStrategy(
         let fileName: string | undefined;
         let key: string | undefined;
         let storage: string | undefined;
-        if (output && output.type === "json") {
-          if (output.value && typeof output.value.fileName === "string") {
-            fileName = output.value.fileName;
+
+        // Check if output has nested value (AI SDK format)
+        const outputData = output?.value ?? output;
+
+        if (outputData) {
+          if (typeof outputData.fileName === "string") {
+            fileName = outputData.fileName;
           }
-          if (output.value && typeof output.value.key === "string") {
-            key = output.value.key;
+          if (typeof outputData.key === "string") {
+            key = outputData.key;
           }
-          if (output.value && typeof output.value.storage === "string") {
-            storage = output.value.storage;
-          }
-        } else if (output && typeof output.fileName === "string") {
-          fileName = output.fileName;
-        } else if (output) {
-          // Fallback: some runtimes may deliver plain objects instead of { type: 'json', value }
-          if (typeof output.key === "string") {
-            key = output.key;
-          }
-          if (typeof output.storage === "string") {
-            storage = output.storage;
+          if (typeof outputData.storage === "string") {
+            storage = outputData.storage;
           }
         }
         const display =
@@ -278,6 +272,27 @@ export async function writeToolResultsToFileStrategy(
       }
 
       if (!outputValue) continue;
+
+      // Skip if this is already a reference (previously compacted)
+      if (typeof outputValue === "string") {
+        if (
+          outputValue.startsWith("Written to file:") ||
+          outputValue.startsWith("Read from storage:")
+        ) {
+          continue;
+        }
+      } else if (
+        output &&
+        output.type === "text" &&
+        typeof output.value === "string"
+      ) {
+        if (
+          output.value.startsWith("Written to file:") ||
+          output.value.startsWith("Read from storage:")
+        ) {
+          continue;
+        }
+      }
 
       // Generate descriptive sequential file name
       const toolName = part.toolName || "unknown";
