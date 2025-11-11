@@ -22,29 +22,34 @@ ctx-zip tackles two major context problems:
 Transforms MCP servers and AI SDK tools into inspectable TypeScript code in a sandbox. Instead of loading hundreds of tool schemas upfront, agents explore tools on-demand using filesystem operations.
 
 **The Problem:**
+
+Context Rot
 - Tool schemas consume thousands of tokens before your prompt
+- Every tool output is pulled into the model context
 - Every tool definition passes through model context
 - Agents can't inspect implementations to understand behavior
 
 **The Solution:**
-- Tool definitions live in sandbox filesystem (not in context)
-- Agents explore on-demand with `sandbox_ls`, `sandbox_cat`, `sandbox_grep`
-- Write and execute code that combines multiple tools
-- **Result**: 80%+ token reduction for multi-tool workflows
+- Tools are transformed to importable code that live in the sandbox filesystem (not in context)
+- Progressive Exploration: Agents explore the file system on-demand with `sandbox_ls`, `sandbox_cat`, `sandbox_grep`
+- Agents write and execute code that combines multiple tools
+- **Result**: Higher reliability, fast and ~80%+ token reduction for multi-tool workflows
 
 ### 2. **Output Compaction with Smart Retrieval**
-Automatically persists large tool outputs to storage and replaces them with concise references. Agents can retrieve content on-demand using reader tools.
+Automatically persists large tool outputs to the file system and replaces them with concise references. Agents can retrieve content on-demand using reader tools.
 
 **The Problem:**
+
+Context Rot
 - Large tool outputs (search results, file contents, API responses) bloat context
 - Conversation history accumulates thousands of unused tokens
 - Context windows exhaust, costs increase, performance degrades
 
 **The Solution:**
-- Tool outputs written to storage (local filesystem or sandbox)
+- Tool outputs are automatically written to the file system (local filesystem or sandbox)
 - Replaced with short references in conversation
 - Agents retrieve data on-demand with `readFile` and `grepAndSearchFile`
-- **Result**: 60-90% token reduction for tool-heavy conversations
+- **Result**: ~60-90% token reduction for tool-heavy conversations
 
 ---
 
@@ -55,14 +60,15 @@ Automatically persists large tool outputs to storage and replaces them with conc
 Transform tools into explorable code that agents can inspect and execute:
 
 ```typescript
-import { generateText } from "ai";
+import { generateText, tool } from "ai";
+import { z } from "zod";
 import { SandboxManager, E2BSandboxProvider } from "ctx-zip";
 
 // Step 1: Create a sandbox
 const sandboxProvider = await E2BSandboxProvider.create();
 const manager = await SandboxManager.create({ sandboxProvider });
 
-// Step 2: Register MCP servers and/or tools
+// Step 2: Register MCP servers and/or AI SDK tools
 await manager.register({
   servers: [
     { name: "grep-app", url: "https://mcp.grep.app" },
@@ -72,6 +78,18 @@ await manager.register({
       headers: { Authorization: `Bearer ${process.env.LINEAR_TOKEN}` }
     },
   ],
+  standardTools: {
+    weather: tool({
+      description: "Get the weather in a location",
+      inputSchema: z.object({
+        location: z.string(),
+      }),
+      async execute({ location }) {
+        const temp = 72 + Math.floor(Math.random() * 21) - 10;
+        return { location, temperature: temp, units: "°F" };
+      },
+    }),
+  },
 });
 
 // Step 3: Get exploration and execution tools
@@ -82,7 +100,7 @@ const tools = manager.getAllTools();
 const result = await generateText({
   model: "openai/gpt-4.1-mini",
   tools,
-  prompt: "Search the codebase using grep-app and create a Linear issue",
+  prompt: "Search the codebase, check the weather, and create a Linear issue",
 });
 
 console.log(result.text);
@@ -108,7 +126,8 @@ The `register()` call creates a directory structure in the sandbox:
 │   │   └── index.ts
 │   └── _client.ts       # MCP routing client
 ├── local-tools/         # AI SDK tool implementations
-│   └── (empty if no standardTools provided)
+│   ├── weather.ts
+│   └── index.ts
 ├── user-code/          # Agent execution workspace
 └── compact/            # Tool output storage (for compaction)
 ```
@@ -128,55 +147,32 @@ Once tools are registered, agents can explore them:
 ```typescript
 // Agent explores available tools
 await sandbox_ls("/workspace/servers")
-// → ["grep-app/", "linear/"]
+// → ["grep-app/", "linear/", "_client.ts"]
+
+await sandbox_ls("/workspace/local-tools")
+// → ["weather.ts", "index.ts"]
 
 // Agent inspects a tool
 await sandbox_cat("/workspace/servers/grep-app/search.ts")
 // → Full TypeScript source with types and documentation
 
-// Agent writes code to use multiple tools
+// Agent writes code to use multiple tools together
 await sandbox_exec(`
   import { search } from './servers/grep-app/index.ts';
   import { createIssue } from './servers/linear/index.ts';
+  import { weather } from './local-tools/index.ts';
   
   const results = await search({ query: 'authentication bug' });
   const topResult = results[0];
+  const weatherData = await weather({ location: 'San Francisco' });
   
   await createIssue({
     title: 'Fix auth bug from codebase search',
-    description: topResult.content,
+    description: \`Found issue: \${topResult.content}\nWeather: \${weatherData.temperature}\`,
   });
   
   return { created: true, result: topResult.file };
 `);
-```
-
-**Registering AI SDK Tools:**
-
-You can also register standard AI SDK tools for exploration:
-
-```typescript
-import { tool } from "ai";
-import { z } from "zod";
-
-const weatherTool = tool({
-  description: "Get the weather in a location",
-  inputSchema: z.object({
-    location: z.string(),
-  }),
-  async execute({ location }) {
-    const temp = 72 + Math.floor(Math.random() * 21) - 10;
-    return { location, temperature: temp, units: "°F" };
-  },
-});
-
-await manager.register({
-  standardTools: {
-    weather: weatherTool,
-  },
-});
-
-// Now available at: /workspace/local-tools/weather.ts
 ```
 
 **API Reference:**
@@ -559,7 +555,6 @@ type Boundary =
   | "all"
   | { type: "keep-first"; count: number }
   | { type: "keep-last"; count: number }
-  | { type: "pre", start: number }
 ```
 
 ### Reader Tools
