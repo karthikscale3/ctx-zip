@@ -149,7 +149,7 @@ async function run(boundary: Boundary) {
 }
 
 async function testSinceLastAssistantOrUserText() {
-  const { compacted, adapter } = await run("last-turn");
+  const { compacted, adapter } = await run("all");
   // Window starts after last user/assistant text (index 9), so only index 11 is compacted.
   assert.equal(adapter.writes.length, 1);
   // Index 3 remains JSON (older fetch)
