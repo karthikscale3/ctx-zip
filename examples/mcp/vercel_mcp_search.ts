@@ -26,7 +26,7 @@ import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
 import {
-  SandboxExplorer,
+  SandboxManager,
   VercelSandboxProvider,
 } from "../../src/sandbox-code-generator/index.js";
 
@@ -101,7 +101,7 @@ async function main() {
 
   console.log("✅ Environment validated\n");
 
-  // Initialize with Vercel sandbox and grep-app
+  // Initialize with Vercel sandbox
   console.log("🔧 Creating Vercel sandbox...");
   const sandboxProvider = await VercelSandboxProvider.create({
     timeout: 1800000, // 30 minutes
@@ -109,8 +109,15 @@ async function main() {
     vcpus: 4,
   });
 
-  const explorer = await SandboxExplorer.create({
+  // Initialize SandboxManager with Vercel provider
+  console.log("🔧 Setting up sandbox manager...");
+  const manager = await SandboxManager.create({
     sandboxProvider,
+  });
+
+  // Register MCP tools
+  console.log("🔧 Registering MCP tools (grep.app)...");
+  await manager.register({
     servers: [
       {
         name: "grep-app",
@@ -119,15 +126,11 @@ async function main() {
     ],
   });
 
-  // Generate the file system with MCP tool definitions
-  console.log("🔧 Setting up MCP tools (grep.app)...");
-  await explorer.generateFileSystem();
-
   // Get all tools
-  const tools = explorer.getAllTools();
+  const tools = manager.getAllTools();
 
-  const serversDir = `${sandboxProvider.getWorkspacePath()}/servers`;
-  const userCodeDir = `${sandboxProvider.getWorkspacePath()}/user-code`;
+  const serversDir = manager.getServersDir();
+  const userCodeDir = manager.getUserCodeDir();
 
   // Create session ID and messages file path
   const sessionId = `github-search-${new Date()
@@ -205,7 +208,7 @@ async function main() {
   const cleanup = async () => {
     rl.close();
     console.log("\n🧹 Cleaning up Vercel sandbox...");
-    await explorer.cleanup();
+    await manager.cleanup();
     console.log("✅ Done!\n");
   };
 

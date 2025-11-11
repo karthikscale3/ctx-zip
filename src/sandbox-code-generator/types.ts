@@ -14,19 +14,7 @@ export interface MCPServerConfig {
   useSSE?: boolean;
 }
 
-export interface SandboxExplorerConfig {
-  /**
-   * MCP servers to fetch tools from.
-   */
-  servers?: MCPServerConfig[];
-  /**
-   * Regular AI SDK tools to transform into sandbox code.
-   */
-  standardTools?: Record<string, Tool<any, any>>;
-  /**
-   * Options for regular AI SDK tool code generation.
-   */
-  standardToolOptions?: ToolCodeGenerationOptions;
+export interface SandboxManagerConfig {
   /**
    * Custom sandbox provider. If not provided, defaults to LocalSandboxProvider
    */
@@ -35,10 +23,26 @@ export interface SandboxExplorerConfig {
    * Options for the sandbox provider (used if sandboxProvider is not provided)
    */
   sandboxOptions?: SandboxProviderOptions;
+}
+
+/**
+ * @deprecated Use SandboxManagerConfig instead
+ */
+export interface SandboxExplorerConfig extends SandboxManagerConfig {
   /**
-   * Directory where MCP tool files will be generated.
-   * If not provided, defaults to `{workspacePath}/servers` where workspacePath
-   * comes from the sandbox provider.
+   * @deprecated Use register() method instead
+   */
+  servers?: MCPServerConfig[];
+  /**
+   * @deprecated Use register() method instead
+   */
+  standardTools?: Record<string, Tool<any, any>>;
+  /**
+   * @deprecated Use register() method instead
+   */
+  standardToolOptions?: ToolCodeGenerationOptions;
+  /**
+   * @deprecated Use register() method instead
    */
   outputDir?: string;
 }

@@ -37,27 +37,15 @@ export type {
 
 // Sandbox Code Generator
 export {
-  createExecutionTool,
-  createExplorationTools,
   E2BSandboxProvider,
   LocalSandboxProvider,
   SandboxExplorer,
+  SandboxManager,
   VercelSandboxProvider,
 } from "./sandbox-code-generator/index";
 export type {
-  CommandResult,
   E2BSandboxOptions,
   LocalSandboxOptions,
-  MCPServerConfig,
-  SandboxCommand,
-  SandboxExplorerConfig,
-  SandboxFile,
   SandboxProvider,
-  SandboxProviderOptions,
-  ServerToolsMap,
-  ToolCodeGenerationOptions,
   ToolCodeGenerationResult,
-  ToolDefinition,
-  ToolMetadata,
-  ToolParameterMetadata,
 } from "./sandbox-code-generator/index";

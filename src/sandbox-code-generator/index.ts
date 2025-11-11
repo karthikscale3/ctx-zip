@@ -8,28 +8,10 @@ export {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
-export { SandboxExplorer } from "./sandbox-explorer.js";
-export type {
-  CommandResult,
-  SandboxCommand,
-  SandboxFile,
-  SandboxProvider,
-  SandboxProviderOptions,
-} from "./sandbox-provider.js";
 export {
-  createExecutionTool,
-  createExplorationTools,
-} from "./sandbox-tools.js";
-export type {
-  ToolCodeGenerationOptions,
-  ToolCodeGenerationResult,
-  ToolMetadata,
-  ToolParameterMetadata,
-} from "./tool-code-writer.js";
-export type {
-  MCPServerConfig,
-  SandboxExplorerConfig,
-  ServerToolsMap,
-  ToolDefinition,
-} from "./types.js";
+  SandboxManager as SandboxExplorer,
+  SandboxManager,
+} from "./sandbox-manager.js";
+export type { SandboxProvider } from "./sandbox-provider.js";
+export type { ToolCodeGenerationResult } from "./tool-code-writer.js";
 export { VercelSandboxProvider } from "./vercel-sandbox-provider.js";

@@ -1,4 +1,4 @@
-// SandboxExplorer - unified sandbox environment for MCP and standard tools
+// SandboxManager - unified sandbox environment for MCP and standard tools
 
 import type { Tool } from "ai";
 import { writeFilesToSandbox } from "./file-generator.js";
@@ -19,60 +19,40 @@ import {
 } from "./tool-code-writer.js";
 import type {
   MCPServerConfig,
-  SandboxExplorerConfig,
+  SandboxManagerConfig,
   ServerToolsMap,
 } from "./types.js";
 
-export class SandboxExplorer {
+export class SandboxManager {
   private readonly sandboxProvider: SandboxProvider;
-  private readonly servers: MCPServerConfig[];
-  private readonly standardTools: Record<string, Tool<any, any>>;
-  private readonly standardToolOptions?: ToolCodeGenerationOptions;
-
   private readonly workspacePath: string;
   private readonly explorationRoot: string;
 
-  private mcpOutputDir?: string;
-  private standardToolsResult?: ToolCodeGenerationResult;
-  private serverToolsMap: ServerToolsMap = {};
+  private readonly serversDir: string;
+  private readonly localToolsDir: string;
+  private readonly userCodeDir: string;
 
-  private constructor(
-    sandboxProvider: SandboxProvider,
-    options: {
-      servers: MCPServerConfig[];
-      mcpOutputDir?: string;
-      standardTools: Record<string, Tool<any, any>>;
-      standardToolOptions?: ToolCodeGenerationOptions;
-    }
-  ) {
+  private serverToolsMap: ServerToolsMap = {};
+  private standardToolsResult?: ToolCodeGenerationResult;
+
+  private constructor(sandboxProvider: SandboxProvider) {
     this.sandboxProvider = sandboxProvider;
     this.workspacePath = sandboxProvider.getWorkspacePath();
     this.explorationRoot = this.workspacePath;
 
-    this.servers = options.servers;
-    this.mcpOutputDir = options.mcpOutputDir;
-    this.standardTools = options.standardTools;
-    this.standardToolOptions = options.standardToolOptions;
+    // Define the three standard directories
+    this.serversDir = `${this.workspacePath}/servers`;
+    this.localToolsDir = `${this.workspacePath}/local-tools`;
+    this.userCodeDir = `${this.workspacePath}/user-code`;
   }
 
   /**
-   * Create and initialize a new SandboxExplorer instance
+   * Create and initialize a new SandboxManager instance with the base directory structure
    */
-  static async create(config: SandboxExplorerConfig): Promise<SandboxExplorer> {
-    const {
-      servers = [],
-      standardTools = {},
-      standardToolOptions,
-      sandboxProvider,
-      sandboxOptions = {},
-      outputDir,
-    } = config;
-
-    if (servers.length === 0 && Object.keys(standardTools).length === 0) {
-      throw new Error(
-        "SandboxExplorer requires at least one MCP server or one standard tool."
-      );
-    }
+  static async create(
+    config: SandboxManagerConfig = {}
+  ): Promise<SandboxManager> {
+    const { sandboxProvider, sandboxOptions = {} } = config;
 
     let provider: SandboxProvider;
     if (sandboxProvider) {
@@ -84,27 +64,55 @@ export class SandboxExplorer {
       console.log("✓ Using local sandbox provider (default)");
     }
 
-    const workspacePath = provider.getWorkspacePath();
-    const mcpOutputDir = outputDir || `${workspacePath}/servers`;
+    const manager = new SandboxManager(provider);
 
-    return new SandboxExplorer(provider, {
-      servers,
-      mcpOutputDir,
-      standardTools,
-      standardToolOptions,
-    });
+    // Create the three standard directories
+    console.log("\n🔧 Initializing sandbox directories...");
+    await manager.createDirectoryStructure();
+    console.log("✓ Sandbox directory structure initialized");
+
+    return manager;
   }
 
   /**
-   * Fetch MCP tools, write local tools, and generate sandbox workspace
+   * Create the standard directory structure (servers, local-tools, user-code)
    */
-  async generateFileSystem(): Promise<void> {
-    if (this.servers.length > 0) {
-      console.log(
-        `\nFetching tools from ${this.servers.length} MCP server(s)...`
-      );
+  private async createDirectoryStructure(): Promise<void> {
+    const dirs = [this.serversDir, this.localToolsDir, this.userCodeDir];
 
-      for (const server of this.servers) {
+    for (const dir of dirs) {
+      const mkdirResult = await this.sandboxProvider.runCommand({
+        cmd: "mkdir",
+        args: ["-p", dir],
+      });
+
+      if (mkdirResult.exitCode !== 0) {
+        const stderr = await mkdirResult.stderr();
+        throw new Error(`Failed to create directory ${dir}: ${stderr}`);
+      }
+    }
+  }
+
+  /**
+   * Register MCP servers and/or standard tools for transformation and writing to appropriate directories
+   */
+  async register(options: {
+    servers?: MCPServerConfig[];
+    standardTools?: Record<string, Tool<any, any>>;
+    standardToolOptions?: ToolCodeGenerationOptions;
+  }): Promise<void> {
+    const { servers = [], standardTools = {}, standardToolOptions } = options;
+
+    if (servers.length === 0 && Object.keys(standardTools).length === 0) {
+      console.warn("⚠️  No servers or standard tools provided to register().");
+      return;
+    }
+
+    // Process MCP servers
+    if (servers.length > 0) {
+      console.log(`\nFetching tools from ${servers.length} MCP server(s)...`);
+
+      for (const server of servers) {
         try {
           console.log(`  Connecting to ${server.name}...`);
           const tools = await fetchToolDefinitions(server);
@@ -147,17 +155,14 @@ export class SandboxExplorer {
           console.warn(`Warning: Failed to install dependencies: ${stderr}`);
         }
 
-        const outputDir = this.mcpOutputDir ?? `${this.workspacePath}/servers`;
-        this.mcpOutputDir = outputDir;
-
         await writeFilesToSandbox(
           this.sandboxProvider,
           this.serverToolsMap,
-          this.servers,
-          outputDir
+          servers,
+          this.serversDir
         );
 
-        console.log(`✓ MCP tool file system generated at ${outputDir}`);
+        console.log(`✓ MCP tool file system generated at ${this.serversDir}`);
       } else {
         console.warn(
           "⚠️  No MCP tools were fetched from the provided servers."
@@ -165,12 +170,16 @@ export class SandboxExplorer {
       }
     }
 
-    if (Object.keys(this.standardTools).length > 0) {
+    // Process standard tools
+    if (Object.keys(standardTools).length > 0) {
       console.log("\nGenerating source files for standard AI SDK tools...");
       this.standardToolsResult = await writeToolsToSandbox(
         this.sandboxProvider,
-        this.standardTools,
-        this.standardToolOptions
+        standardTools,
+        {
+          ...standardToolOptions,
+          outputDir: this.localToolsDir,
+        }
       );
       console.log(
         `✓ Generated ${this.standardToolsResult.files.length} file(s) at ${this.standardToolsResult.outputDir}`
@@ -189,8 +198,7 @@ export class SandboxExplorer {
    * Get AI SDK tool for executing code in the sandbox
    */
   getExecutionTool() {
-    const userCodeDir = `${this.workspacePath}/user-code`;
-    return createExecutionTool(this.sandboxProvider, userCodeDir);
+    return createExecutionTool(this.sandboxProvider, this.userCodeDir);
   }
 
   /**
@@ -208,6 +216,34 @@ export class SandboxExplorer {
    */
   getSandboxProvider(): SandboxProvider {
     return this.sandboxProvider;
+  }
+
+  /**
+   * Get the path to the servers directory
+   */
+  getServersDir(): string {
+    return this.serversDir;
+  }
+
+  /**
+   * Get the path to the local-tools directory
+   */
+  getLocalToolsDir(): string {
+    return this.localToolsDir;
+  }
+
+  /**
+   * Get the path to the user-code directory
+   */
+  getUserCodeDir(): string {
+    return this.userCodeDir;
+  }
+
+  /**
+   * Get the workspace path
+   */
+  getWorkspacePath(): string {
+    return this.workspacePath;
   }
 
   /**
@@ -231,7 +267,7 @@ export class SandboxExplorer {
     totalServers: number;
     totalMcpTools: number;
     servers: Array<{ name: string; toolCount: number; tools: string[] }>;
-    standardTools: string[];
+    localTools: string[];
   } {
     const servers = Object.entries(this.serverToolsMap).map(
       ([name, tools]) => ({
@@ -241,11 +277,15 @@ export class SandboxExplorer {
       })
     );
 
+    const localTools = this.standardToolsResult
+      ? this.standardToolsResult.tools.map((t) => t.name)
+      : [];
+
     return {
       totalServers: servers.length,
       totalMcpTools: servers.reduce((sum, s) => sum + s.toolCount, 0),
       servers,
-      standardTools: Object.keys(this.standardTools),
+      localTools,
     };
   }
 
@@ -253,15 +293,10 @@ export class SandboxExplorer {
    * Display the complete file system tree structure
    */
   async displayFileSystemTree(): Promise<void> {
-    const targetDir =
-      this.mcpOutputDir ??
-      this.standardToolsResult?.outputDir ??
-      this.workspacePath;
-
-    console.log(`\n📂 File System Tree at ${targetDir}:`);
+    console.log(`\n📂 Sandbox File System Tree at ${this.workspacePath}:`);
     console.log("─".repeat(60));
 
-    const treeCommand = `command -v tree >/dev/null 2>&1 && tree -L 3 ${targetDir} || find ${targetDir} -type f -o -type d | sort | sed 's|${targetDir}||' | sed 's|^/||' | awk '{depth=split($0,a,\"/\"); for(i=1;i<depth;i++)printf(\"  \"); if(depth>0)print a[depth]}'`;
+    const treeCommand = `command -v tree >/dev/null 2>&1 && tree -L 3 ${this.workspacePath} || find ${this.workspacePath} -type f -o -type d | sort | sed 's|${this.workspacePath}||' | sed 's|^/||' | awk '{depth=split($0,a,\"/\"); for(i=1;i<depth;i++)printf(\"  \"); if(depth>0)print a[depth]}'`;
 
     const treeResult = await this.sandboxProvider.runCommand({
       cmd: "sh",
@@ -274,7 +309,7 @@ export class SandboxExplorer {
     } else {
       const findResult = await this.sandboxProvider.runCommand({
         cmd: "find",
-        args: [targetDir, "-type", "f"],
+        args: [this.workspacePath, "-type", "f"],
       });
       if (findResult.exitCode === 0) {
         const stdout = await findResult.stdout();

@@ -36,7 +36,7 @@ import { fetchModels } from "tokenlens";
 import { z } from "zod";
 import {
   LocalSandboxProvider,
-  SandboxExplorer,
+  SandboxManager,
 } from "../../src/sandbox-code-generator/index.js";
 
 // Load environment variables
@@ -136,10 +136,15 @@ async function main() {
 
   console.log(`📁 Sandbox location: ${sandboxProvider.getAbsolutePath()}`);
 
-  // Initialize SandboxExplorer with local provider, MCP tools, and standard tools
-  console.log("🔧 Setting up MCP tools (grep.app) and standard tools...");
-  const explorer = await SandboxExplorer.create({
+  // Initialize SandboxManager with local provider
+  console.log("🔧 Setting up sandbox manager...");
+  const manager = await SandboxManager.create({
     sandboxProvider,
+  });
+
+  // Register MCP tools and standard tools
+  console.log("🔧 Registering MCP tools (grep.app) and standard tools...");
+  await manager.register({
     servers: [
       {
         name: "grep-app",
@@ -154,21 +159,17 @@ async function main() {
     },
   });
 
-  // Generate the file system with MCP tool definitions
-  await explorer.generateFileSystem();
-
   // Get all sandbox tools (exploration and execution)
-  const sandboxTools = explorer.getAllTools();
+  const sandboxTools = manager.getAllTools();
 
   // Combine sandbox tools with the original weather tool
   const tools = {
     ...sandboxTools,
   };
 
-  const workspacePath = sandboxProvider.getWorkspacePath();
-  const serversDir = `${workspacePath}/servers`;
-  const localToolsDir = `${workspacePath}/local-tools`;
-  const userCodeDir = `${workspacePath}/user-code`;
+  const serversDir = manager.getServersDir();
+  const localToolsDir = manager.getLocalToolsDir();
+  const userCodeDir = manager.getUserCodeDir();
 
   // Create session ID and messages file path
   const sessionId = `github-search-${new Date()

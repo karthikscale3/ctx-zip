@@ -23,7 +23,7 @@ import { z } from "zod";
 import {
   E2BSandboxProvider,
   LocalSandboxProvider,
-  SandboxExplorer,
+  SandboxManager,
   VercelSandboxProvider,
   type SandboxProvider,
   type ToolCodeGenerationResult,
@@ -77,12 +77,15 @@ async function main() {
     console.log(`\n=== ${providerName.toUpperCase()} SANDBOX ===`);
 
     let sandboxProvider: SandboxProvider | undefined;
-    let explorer: SandboxExplorer | undefined;
+    let manager: SandboxManager | undefined;
 
     try {
       sandboxProvider = await createProvider(providerName);
-      explorer = await SandboxExplorer.create({
+      manager = await SandboxManager.create({
         sandboxProvider,
+      });
+
+      await manager.register({
         standardTools: {
           weather: weatherTool,
         },
@@ -91,7 +94,7 @@ async function main() {
         },
       });
 
-      await runWeatherDemo(explorer, providerName, sampleLocation);
+      await runWeatherDemo(manager, providerName, sampleLocation);
     } catch (error) {
       console.error(
         `✗ Error while running demo in ${providerName} sandbox: ${
@@ -110,8 +113,8 @@ async function main() {
       }
     } finally {
       try {
-        if (explorer) {
-          await explorer.cleanup();
+        if (manager) {
+          await manager.cleanup();
         } else if (sandboxProvider) {
           await sandboxProvider.stop();
         }
@@ -159,17 +162,15 @@ async function createProvider(
 }
 
 async function runWeatherDemo(
-  explorer: SandboxExplorer,
+  manager: SandboxManager,
   providerName: ProviderName,
   location: string
 ) {
-  await explorer.generateFileSystem();
-
-  const provider = explorer.getSandboxProvider();
+  const provider = manager.getSandboxProvider();
   console.log(`→ Workspace path: ${provider.getWorkspacePath()}`);
 
   const generationResult: ToolCodeGenerationResult | undefined =
-    explorer.getStandardToolsResult();
+    manager.getStandardToolsResult();
 
   if (!generationResult) {
     console.warn("⚠️  No standard tools were generated.");
