@@ -89,10 +89,8 @@ export class LocalFileAdapter implements FileAdapter {
   }
 
   toString(): string {
-    const parts = [this.baseDir];
-    if (this.prefix) parts.push(this.prefix);
-    // Don't include sessionId here - it's already part of resolved keys
-    return `file://${parts.join("/")}`;
+    // Return just the baseDir - prefix and sessionId are already part of resolved keys
+    return `file://${this.baseDir}`;
   }
 }
 
@@ -195,8 +193,7 @@ export class SandboxFileAdapter implements FileAdapter {
   }
 
   toString(): string {
-    // Use a custom scheme that uniquely identifies this sandbox adapter
-    // Format: sandbox://{sandboxId}
+    // Return just the sandbox workspace path - prefix and sessionId are already part of resolved keys
     return `sandbox://${this.sandboxProvider.getId()}`;
   }
 }
