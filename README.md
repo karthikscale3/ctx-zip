@@ -1,21 +1,8 @@
 # ctx-zip
 
-Keep your agent context small and cheap by applying proven context management techniques. ctx-zip helps you manage context bloat through tool output compaction with boundary control and progressive tool discovery—reducing token usage, lowering costs, and improving agent performance.
+Keep your AI agent context small and cheap by managing tool bloat and large outputs. ctx-zip provides two complementary techniques: **Tool Discovery** (transform MCP servers and tools into explorable code) and **Output Compaction** (persist large results to storage with smart retrieval).
 
-Works primarily with the AI SDK for agents and loop control. See: [AI SDK – Loop Control: Context Management](https://ai-sdk.dev/docs/agents/loop-control#context-management).
-
-## The Problem: Context Bloat
-
-As agents run longer conversations and use more tools, context windows fill up with:
-- **Large tool outputs**: Search results, file contents, API responses that consume thousands of tokens
-- **Tool definitions**: Hundreds or thousands of MCP tool schemas loaded upfront
-- **Conversation history**: Every message accumulates, even when older context is no longer needed
-
-This leads to:
-- **Exhausted context windows**: Models hit token limits and fail mid-conversation
-- **Higher costs**: More tokens = higher API costs
-- **Slower responses**: Larger contexts increase latency
-- **Reduced accuracy**: Models struggle with signal-to-noise ratio in bloated contexts
+Works with the AI SDK for agents and loop control. See: [AI SDK – Loop Control: Context Management](https://ai-sdk.dev/docs/agents/loop-control#context-management).
 
 ## Installation
 
@@ -27,55 +14,251 @@ pnpm add ctx-zip
 
 ---
 
-## Context Management Techniques
+## What It Does
 
-ctx-zip provides two complementary techniques for managing context efficiently. Use them individually or combine them for maximum effectiveness.
+ctx-zip tackles two major context problems:
 
-### Technique 1: Tool Output Compaction with Boundary Management
+### 1. **Tool Discovery & Code Generation**
+Transforms MCP servers and AI SDK tools into inspectable TypeScript code in a sandbox. Instead of loading hundreds of tool schemas upfront, agents explore tools on-demand using filesystem operations.
 
-**What it does**: Automatically persists large tool outputs to storage and replaces them with concise references in the message history. You control which parts of the conversation get compacted through configurable boundary strategies.
+**The Problem:**
+- Tool schemas consume thousands of tokens before your prompt
+- Every tool definition passes through model context
+- Agents can't inspect implementations to understand behavior
 
-**How it works**: 
-1. Scans messages for tool results with large payloads
-2. Writes outputs to the local filesystem as JSON files
-3. Replaces the full output with a short reference like `Written to storage: file:///path/to/tool-result-001.json`
-4. Provides reader tools (`readFile`, `grepAndSearchFile`) so agents can retrieve content on-demand
-5. Uses boundary configuration to determine which messages to compact
+**The Solution:**
+- Tool definitions live in sandbox filesystem (not in context)
+- Agents explore on-demand with `sandbox_ls`, `sandbox_cat`, `sandbox_grep`
+- Write and execute code that combines multiple tools
+- **Result**: 80%+ token reduction for multi-tool workflows
 
-**Benefits**:
-- Reduces token usage by 60-90% for tool-heavy conversations
-- Keeps conversation history lean while preserving access to data
-- Works transparently with existing tools
-- Flexible boundary control to preserve important context
+### 2. **Output Compaction with Smart Retrieval**
+Automatically persists large tool outputs to storage and replaces them with concise references. Agents can retrieve content on-demand using reader tools.
 
-**Example**:
+**The Problem:**
+- Large tool outputs (search results, file contents, API responses) bloat context
+- Conversation history accumulates thousands of unused tokens
+- Context windows exhaust, costs increase, performance degrades
+
+**The Solution:**
+- Tool outputs written to storage (local filesystem or sandbox)
+- Replaced with short references in conversation
+- Agents retrieve data on-demand with `readFile` and `grepAndSearchFile`
+- **Result**: 60-90% token reduction for tool-heavy conversations
+
+---
+
+## How It Works
+
+### Technique 1: Tool Discovery & Code Generation
+
+Transform tools into explorable code that agents can inspect and execute:
 
 ```typescript
-import { generateText, stepCountIs } from "ai";
-import {
-  compact,
-  createReadFileTool,
+import { generateText } from "ai";
+import { SandboxManager, E2BSandboxProvider } from "ctx-zip";
+
+// Step 1: Create a sandbox
+const sandboxProvider = await E2BSandboxProvider.create();
+const manager = await SandboxManager.create({ sandboxProvider });
+
+// Step 2: Register MCP servers and/or tools
+await manager.register({
+  servers: [
+    { name: "grep-app", url: "https://mcp.grep.app" },
+    { 
+      name: "linear", 
+      url: "https://mcp.linear.app/mcp",
+      headers: { Authorization: `Bearer ${process.env.LINEAR_TOKEN}` }
+    },
+  ],
+});
+
+// Step 3: Get exploration and execution tools
+const tools = manager.getAllTools();
+// Available: sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find, sandbox_exec
+
+// Step 4: Agent explores and uses tools
+const result = await generateText({
+  model: "openai/gpt-4.1-mini",
+  tools,
+  prompt: "Search the codebase using grep-app and create a Linear issue",
+});
+
+console.log(result.text);
+
+// Cleanup
+await manager.cleanup();
+```
+
+**What Gets Generated:**
+
+The `register()` call creates a directory structure in the sandbox:
+
+```
+/workspace/
+├── servers/              # MCP tool implementations
+│   ├── grep-app/
+│   │   ├── search.ts
+│   │   ├── index.ts
+│   │   └── _types.ts
+│   ├── linear/
+│   │   ├── createIssue.ts
+│   │   ├── searchIssues.ts
+│   │   └── index.ts
+│   └── _client.ts       # MCP routing client
+├── local-tools/         # AI SDK tool implementations
+│   └── (empty if no standardTools provided)
+├── user-code/          # Agent execution workspace
+└── compact/            # Tool output storage (for compaction)
+```
+
+**Exploration Tools:**
+
+Once tools are registered, agents can explore them:
+
+- `sandbox_ls(path)` - List directory contents
+- `sandbox_cat(path)` - Read file contents
+- `sandbox_grep(pattern, path)` - Search in files
+- `sandbox_find(pattern, path)` - Find files by name
+- `sandbox_exec(code)` - Execute TypeScript code
+
+**Example Agent Workflow:**
+
+```typescript
+// Agent explores available tools
+await sandbox_ls("/workspace/servers")
+// → ["grep-app/", "linear/"]
+
+// Agent inspects a tool
+await sandbox_cat("/workspace/servers/grep-app/search.ts")
+// → Full TypeScript source with types and documentation
+
+// Agent writes code to use multiple tools
+await sandbox_exec(`
+  import { search } from './servers/grep-app/index.ts';
+  import { createIssue } from './servers/linear/index.ts';
+  
+  const results = await search({ query: 'authentication bug' });
+  const topResult = results[0];
+  
+  await createIssue({
+    title: 'Fix auth bug from codebase search',
+    description: topResult.content,
+  });
+  
+  return { created: true, result: topResult.file };
+`);
+```
+
+**Registering AI SDK Tools:**
+
+You can also register standard AI SDK tools for exploration:
+
+```typescript
+import { tool } from "ai";
+import { z } from "zod";
+
+const weatherTool = tool({
+  description: "Get the weather in a location",
+  inputSchema: z.object({
+    location: z.string(),
+  }),
+  async execute({ location }) {
+    const temp = 72 + Math.floor(Math.random() * 21) - 10;
+    return { location, temperature: temp, units: "°F" };
+  },
+});
+
+await manager.register({
+  standardTools: {
+    weather: weatherTool,
+  },
+});
+
+// Now available at: /workspace/local-tools/weather.ts
+```
+
+**API Reference:**
+
+```typescript
+// Create manager
+const manager = await SandboxManager.create({
+  sandboxProvider?: SandboxProvider,  // E2B, Vercel, or Local
+  sandboxOptions?: LocalSandboxOptions, // If no provider
+});
+
+// Register tools
+await manager.register({
+  servers?: MCPServerConfig[],        // MCP servers to connect
+  standardTools?: Record<string, Tool>, // AI SDK tools
+  standardToolOptions?: {
+    title?: string,
+    outputDir?: string,
+  },
+});
+
+// Get tools
+manager.getAllTools()           // Exploration + execution tools
+manager.getExplorationTools()   // Only ls, cat, grep, find
+manager.getExecutionTool()      // Only exec
+
+// Get paths
+manager.getServersDir()         // /workspace/servers
+manager.getLocalToolsDir()      // /workspace/local-tools
+manager.getUserCodeDir()        // /workspace/user-code
+manager.getCompactDir()         // /workspace/compact
+manager.getWorkspacePath()      // /workspace
+
+// Cleanup
+await manager.cleanup()
+```
+
+---
+
+### Technique 2: Output Compaction with Smart Retrieval
+
+Automatically persist large tool outputs and provide retrieval tools:
+
+```typescript
+import { generateText } from "ai";
+import { 
+  compact, 
+  createReadFileTool, 
   createGrepAndSearchFileTool,
+  SandboxManager,
 } from "ctx-zip";
 
-const storageUri = `file://${process.cwd()}`;
+// For local filesystem storage
+const fileAdapter = SandboxManager.createLocalFileAdapter({
+  baseDir: process.cwd(),
+  sessionId: "my-session",
+});
 
 const result = await generateText({
   model: "openai/gpt-4.1-mini",
   tools: {
-    // Reader tools so the model can access persisted outputs
-    readFile: createReadFileTool(),
-    grepAndSearchFile: createGrepAndSearchFileTool(),
+    // Reader tools for accessing compacted outputs
+    readFile: createReadFileTool({ storage: fileAdapter }),
+    grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
     
-    // ... your other tools ...
+    // Your data-generating tools
+    fetchEmails: tool({
+      description: "Fetch emails from inbox",
+      inputSchema: z.object({ limit: z.number() }),
+      async execute({ limit }) {
+        const emails = await getEmails(limit);
+        return { emails }; // This will be compacted
+      },
+    }),
   },
-  stopWhen: stepCountIs(6),
-  prompt: "Use tools to research, summarize, and cite sources.",
+  prompt: "Check my latest emails and find any about 'budget'",
   prepareStep: async ({ messages }) => {
-    // Compact tool outputs to storage with boundary control
+    // Compact outputs after each turn
     const compacted = await compact(messages, {
-      baseDir: storageUri,
-      boundary: "last-turn", // Compact only the latest turn
+      storage: fileAdapter,
+      boundary: "last-turn",
+      sessionId: "my-session",
     });
     
     return { messages: compacted };
@@ -83,284 +266,208 @@ const result = await generateText({
 });
 ```
 
-**How compaction works**:
+**How Compaction Works:**
 
-The compaction algorithm:
-1. Determines the compaction window based on the `boundary` configuration
-2. Identifies tool result messages within that window
-3. Extracts the output payload (JSON, text, or structured data)
-4. Serializes it to a JSON file with metadata (tool name, timestamp, session ID)
-5. Writes to the local filesystem using the configured directory
-6. Replaces the message content with a reference string
+1. **Agent calls a tool** (e.g., `fetchEmails(50)`)
+2. **Large output returned** (50 emails = 10,000 tokens)
+3. **`compact()` runs in `prepareStep`:**
+   - Detects large tool output
+   - Writes to storage: `/compact/my-session/tool-results/fetchEmails.json`
+   - Replaces output with reference:
+     ```
+     Written to file: file:///path/compact/my-session/tool-results/fetchEmails.json
+     Key: compact/my-session/tool-results/fetchEmails.json
+     Use the read/search tools to inspect its contents.
+     ```
+4. **Agent can retrieve data:**
+   - `readFile(key)` - Read entire file
+   - `grepAndSearchFile(key, pattern)` - Search within file
 
-**Reader tool recognition**: By default, `readFile` and `grepAndSearchFile` are recognized as reader tools. Their outputs are replaced with references to the source file rather than being re-written, preventing circular compaction.
+**Storage Location:**
 
-**Boundary Strategies**:
+When using `SandboxManager` with compaction:
 
-The `boundary` option controls which parts of the conversation history get compacted:
+```
+/workspace/
+└── compact/
+    └── {sessionId}/
+        └── tool-results/
+            ├── fetchEmails.json
+            ├── searchGitHub.json
+            └── getWeather.json
+```
 
-**1. Last Turn (Default)**:
+Each tool overwrites its own file on subsequent calls (one file per tool type).
+
+**Boundary Strategies:**
+
+Control which messages get compacted:
+
 ```typescript
+// 1. Last turn only (default) - compact new outputs each step
 boundary: "last-turn"
-```
-Compacts only messages since the last assistant/user text exchange. Keeps recent conversational context intact while compacting tool outputs from the current turn.
 
-**2. Full History**:
-```typescript
+// 2. All messages - re-compact entire conversation
 boundary: "all"
-```
-Re-compacts the entire conversation. Useful when you want to persist older tool outputs that weren't previously compacted.
 
-**3. Keep First N Messages**:
-```typescript
-boundary: { type: "keep-first", count: 20 }
-```
-Preserves the first 20 messages (typically system instructions and initial setup) and compacts everything after. Perfect for preserving long-lived system prompts.
+// 3. Keep first N - preserve system prompt, compact rest
+boundary: { type: "keep-first", count: 5 }
 
-**4. Keep Last N Messages**:
-```typescript
-boundary: { type: "keep-last", count: 10 }
+// 4. Keep last N - preserve recent context, compact older
+boundary: { type: "keep-last", count: 20 }
 ```
-Preserves the last 10 messages (recent context) and compacts everything before them. Ideal for long-running loops where you want to maintain recent context while compacting older messages.
 
-**Configuration**:
+**Reader Tools:**
+
+Both tools accept a `storage` option:
 
 ```typescript
-interface CompactOptions {
-  strategy?: "write-tool-results-to-file"; // Currently only strategy
-  baseDir?: string | FileAdapter;          // Filesystem directory (file:// URI or FileAdapter instance)
-  boundary?: Boundary;                     // Where to start compacting
-  toolResultSerializer?: (value: unknown) => string; // Custom serialization
-  fileReaderTools?: string[];             // Additional reader tool names
-  sessionId?: string;                     // Organize files by session
-}
+// Option 1: Use FileAdapter instance (recommended)
+const fileAdapter = SandboxManager.createLocalFileAdapter({
+  baseDir: "/path/to/storage",
+  sessionId: "my-session",
+});
+
+createReadFileTool({ storage: fileAdapter })
+createGrepAndSearchFileTool({ storage: fileAdapter })
+
+// Option 2: Use URI string
+createReadFileTool({ storage: "file:///path/to/storage" })
+createGrepAndSearchFileTool({ storage: "file:///path/to/storage" })
 ```
 
-**Combining with AI SDK Loop Control**:
-
-Pair boundary management with AI SDK's `prepareStep` to implement a "last-N messages" strategy:
+**API Reference:**
 
 ```typescript
-prepareStep: async ({ messages }) => {
-  // Keep only last 50 messages, compact older ones
-  const recentMessages = messages.slice(-50);
-  const compacted = await compact(recentMessages, {
-    baseDir: storageUri,
-    boundary: { type: "keep-last", count: 10 },
-  });
-  
-  return { messages: compacted };
-}
+// Compact messages
+const compacted = await compact(messages, {
+  storage: FileAdapter | string,    // Where to write files
+  boundary?: Boundary,               // Which messages to compact
+  sessionId?: string,                // Organize by session
+  fileReaderTools?: string[],        // Tools that read (not persisted)
+});
+
+// Create reader tools
+const readFile = createReadFileTool({
+  storage?: FileAdapter | string,    // Defaults to cwd
+  description?: string,              // Custom description
+});
+
+const grepTool = createGrepAndSearchFileTool({
+  storage?: FileAdapter | string,    // Defaults to cwd
+  description?: string,              // Custom description
+});
+
+// Create local file adapter
+const adapter = SandboxManager.createLocalFileAdapter({
+  baseDir: string,                   // Absolute directory path
+  prefix?: string,                   // Subdirectory (default: "compact")
+  sessionId?: string,                // Session organization
+});
 ```
-
-**Use Cases**:
-
-- **Preserve system instructions**: Use `keep-first` to maintain detailed system prompts
-- **Maintain recent context**: Use `keep-last` for conversational agents that need recent memory
-- **Incremental compaction**: Use `last-turn` to compact only new tool outputs each step
-- **Full re-compaction**: Use `all` when reorganizing files or re-compacting the entire conversation
 
 ---
 
-### Technique 2: Progressive Tool Discovery & Code Generation
+## Combining Both Techniques
 
-**What it does**: Transforms both MCP tools and standard AI SDK tools into inspectable source code inside a sandbox, enabling agents to explore tool implementations on-demand instead of loading all definitions upfront.
-
-**How it works**:
-1. **For MCP tools**: Connects to MCP servers, fetches tool definitions, and converts JSON Schema to TypeScript modules
-2. **For AI SDK tools**: Extracts tool code, schema, and metadata from in-process tool definitions
-3. Generates a file system in a sandbox (Vercel, E2B, or Local) with full source code
-4. Provides exploration tools (ls, cat, grep, find) for progressive discovery
-5. Enables code execution in the sandbox, letting agents compose multiple tool calls and process data before returning results
-
-**The Problem It Solves**:
-
-Traditional tool integration loads all definitions upfront. With hundreds or thousands of tools:
-- Tool schemas consume hundreds of thousands of tokens before your prompt
-- Every tool definition passes through the model context
-- Intermediate tool results bloat the conversation
-- Costs and latency increase dramatically
-- Agents can't inspect tool implementations to understand behavior
-
-**The Solution**:
-
-Instead of loading everything upfront:
-1. **Tool definitions live in sandbox filesystem**: Not in model context
-2. **Agents explore on-demand**: Use `sandbox_cat` to read tool definitions when needed
-3. **Code execution in sandbox**: Write TypeScript that imports and calls MCP tools
-4. **Data processing stays local**: Filter, transform, aggregate in sandbox before returning
-5. **Only final results in context**: Intermediate data never touches the model
-
-**Result**: 80%+ reduction in token usage for complex multi-tool workflows.
-
-**Example 1: MCP Tools**:
+Use tool discovery and compaction together for maximum efficiency:
 
 ```typescript
-import { generateText, stepCountIs } from "ai";
-import { SandboxExplorer, VercelSandboxProvider } from "ctx-zip";
+import { generateText } from "ai";
+import { 
+  SandboxManager,
+  compact,
+  createReadFileTool,
+  createGrepAndSearchFileTool,
+  E2BSandboxProvider,
+} from "ctx-zip";
 
-// Initialize with MCP servers
-const sandboxProvider = await VercelSandboxProvider.create({
-  timeout: 1800000,
-  runtime: "node22",
-  vcpus: 4,
-});
+// Step 1: Setup sandbox with tools
+const sandboxProvider = await E2BSandboxProvider.create();
+const manager = await SandboxManager.create({ sandboxProvider });
 
-const explorer = await SandboxExplorer.create({
-  sandboxProvider,
+await manager.register({
   servers: [
     { name: "grep-app", url: "https://mcp.grep.app" },
-    {
-      name: "linear",
-      url: "https://mcp.linear.app/mcp",
-      headers: {
-        Authorization: `Bearer ${process.env.LINEAR_OAUTH_TOKEN}`,
-      },
-    },
   ],
 });
 
-// Generate file system with tool definitions
-await explorer.generateFileSystem();
+// Step 2: Get file adapter for compaction
+const fileAdapter = manager.getFileAdapter({
+  sessionId: "combined-session",
+});
 
-// Get AI SDK tools for exploration and execution
-const tools = explorer.getAllTools();
+// Step 3: Combine exploration + reader tools
+const tools = {
+  ...manager.getAllTools(),                              // Exploration + execution
+  readFile: createReadFileTool({ storage: fileAdapter }),
+  grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
+};
 
-// Agent can now explore and use MCP tools
+// Step 4: Use in agent loop with compaction
 const result = await generateText({
   model: "openai/gpt-4.1-mini",
   tools,
-  stopWhen: stepCountIs(15),
-  prompt: "Search the codebase using grep-app and create a Linear issue",
+  prompt: "Search for authentication bugs in the codebase and summarize",
+  prepareStep: async ({ messages }) => {
+    const compacted = await compact(messages, {
+      storage: fileAdapter,
+      boundary: "last-turn",
+      sessionId: "combined-session",
+    });
+    return { messages: compacted };
+  },
 });
 
 console.log(result.text);
-
-// Cleanup
-await explorer.cleanup();
+await manager.cleanup();
 ```
 
-**Example 2: Standard AI SDK Tools**:
+**Benefits:**
+- MCP tools explored on-demand (no upfront schema loading)
+- Large search results compacted to storage
+- Agents retrieve only what they need
+- Maximum token efficiency
+
+---
+
+## Sandbox Providers
+
+ctx-zip supports three sandbox environments:
+
+### Local Sandbox (Default)
 
 ```typescript
-import { generateText, stepCountIs, tool } from "ai";
-import { z } from "zod";
-import { SandboxExplorer } from "ctx-zip";
+import { SandboxManager, LocalSandboxProvider } from "ctx-zip";
 
-// Define your tools
-const weatherTool = tool({
-  description: "Get the weather in a location",
-  inputSchema: z.object({
-    location: z.string().describe("The location to get the weather for"),
-  }),
-  async execute({ location }) {
-    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
-    return { location, temperature, units: "°F" };
-  },
+// Option 1: Let SandboxManager create default local sandbox
+const manager = await SandboxManager.create();
+
+// Option 2: Explicit local provider
+const provider = await LocalSandboxProvider.create({
+  sandboxDir: "./.sandbox",
+  cleanOnCreate: false,
 });
-
-// Create a sandbox explorer that only has standard tools
-const explorer = await SandboxExplorer.create({
-  standardTools: {
-    weather: weatherTool,
-  },
-  standardToolOptions: {
-    title: "Weather Agent Tools",
-  },
-});
-
-await explorer.generateFileSystem();
-
-const sandboxProvider = explorer.getSandboxProvider();
-const explorationTools = explorer.getAllTools();
-const standardToolsInfo = explorer.getStandardToolsResult();
-
-console.log(`Generated files: ${standardToolsInfo?.files.length ?? 0}`);
-console.log(`Inspect source at: ${standardToolsInfo?.outputDir ?? "(unknown)"}`);
-
-const response = await generateText({
-  model: "openai/gpt-4.1-mini",
-  tools: {
-    ...explorationTools, // sandbox_ls, sandbox_cat, ...
-    weather: weatherTool,
-  },
-  stopWhen: stepCountIs(10),
-  prompt: `Inspect the weather tool implementation in ./local-tools/weather.ts
-and then tell me the forecast for Tokyo using the weather tool.`,
-});
-
-console.log(response.text);
-
-await explorer.cleanup();
+const manager = await SandboxManager.create({ sandboxProvider: provider });
 ```
 
-**How Tool Transformation Works**:
+### E2B Sandbox
 
-**For MCP Tools**:
-
-1. **Fetch**: Connects to MCP servers via HTTP/SSE and calls `listTools()`
-2. **Convert**: Transforms JSON Schema to TypeScript interfaces with:
-   - Input/output type definitions
-   - JSDoc documentation extracted from schema descriptions
-   - Usage examples generated from schema properties
-3. **Generate**: Creates a file tree:
-   ```
-   servers/
-   ├── grep-app/
-   │   ├── search.ts           # Tool function + types
-   │   ├── getFileContent.ts
-   │   └── index.ts            # Re-exports
-   ├── linear/
-   │   ├── createIssue.ts
-   │   └── index.ts
-   └── _client.ts              # MCP routing client
-   ```
-4. **Execute**: Agents write TypeScript that imports tools and calls them:
-   ```typescript
-   import { search } from './servers/grep-app/index.ts';
-   import { createIssue } from './servers/linear/index.ts';
-   
-   const results = await search({ query: 'authentication' });
-   // Process results in sandbox
-   const filtered = results.filter(/* ... */);
-   // Only return final summary to model
-   return filtered;
-   ```
-
-**For AI SDK Tools**:
-
-1. **Extract**: Reads tool metadata (description, schema, execute function)
-2. **Convert**: Generates TypeScript source with:
-   - Full parameter metadata and type information
-   - TypeScript interfaces from Zod schemas
-   - Original execute function preserved as source code
-   - JSDoc comments with parameter descriptions
-3. **Generate**: Creates a file tree:
-   ```
-   local-tools/
-   ├── weather.ts       # Tool implementation + metadata
-   ├── index.ts         # Re-exports
-   └── README.md        # Documentation with schema tables
-   ```
-4. **Inspect**: Agents can read the source to understand:
-   - Exact implementation logic
-   - Parameter requirements and types
-   - Expected return values
-   - Tool behavior and side effects
-
-**Available Sandbox Tools**:
-
-- **sandbox_ls**: List directory contents
-- **sandbox_cat**: Read file contents (view tool definitions)
-- **sandbox_grep**: Search for patterns in files
-- **sandbox_find**: Find files by name pattern
-- **sandbox_exec**: Execute TypeScript code in the sandbox
-
-**Sandbox Providers**:
-
-**Vercel Sandbox**:
 ```typescript
-import { SandboxExplorer, VercelSandboxProvider } from "ctx-zip";
+import { SandboxManager, E2BSandboxProvider } from "ctx-zip";
+
+const provider = await E2BSandboxProvider.create({
+  apiKey: process.env.E2B_API_KEY,
+  timeout: 1800000, // 30 minutes
+});
+
+const manager = await SandboxManager.create({ sandboxProvider: provider });
+```
+
+### Vercel Sandbox
+
+```typescript
+import { SandboxManager, VercelSandboxProvider } from "ctx-zip";
 
 const provider = await VercelSandboxProvider.create({
   timeout: 1800000,
@@ -368,353 +475,136 @@ const provider = await VercelSandboxProvider.create({
   vcpus: 4,
 });
 
-const explorer = await SandboxExplorer.create({
-  sandboxProvider: provider,
-  servers: [/* ... */],
-});
+const manager = await SandboxManager.create({ sandboxProvider: provider });
 ```
-
-**E2B Sandbox**:
-```typescript
-import { SandboxExplorer, E2BSandboxProvider } from "ctx-zip";
-
-const provider = await E2BSandboxProvider.create({
-  apiKey: process.env.E2B_API_KEY,
-});
-
-const explorer = await SandboxExplorer.create({
-  sandboxProvider: provider,
-  servers: [/* ... */],
-});
-```
-
-**Local Sandbox (Default)**:
-```typescript
-import { SandboxExplorer } from "ctx-zip";
-
-const explorer = await SandboxExplorer.create({
-  servers: [/* ... */],
-  sandboxOptions: {
-    sandboxDir: "./.sandbox",
-    cleanOnCreate: false,
-  },
-});
-```
-
-**Benefits**:
-- **Massive token savings**: Load only tools you need, not thousands upfront
-- **Faster responses**: Smaller context windows = lower latency
-- **Lower costs**: Process data in sandbox, not through expensive LLM calls
-- **Better privacy**: Sensitive data stays in sandbox
-- **Progressive discovery**: Agents explore APIs on-demand
-- **Tool composition**: Chain multiple MCP calls in single execution
-- **Data processing**: Filter, transform, aggregate before returning
-
-**Authentication**:
-
-MCP servers requiring authentication can be configured with headers:
-
-```typescript
-const explorer = await SandboxExplorer.create({
-  servers: [
-    {
-      name: "linear",
-      url: "https://mcp.linear.app/mcp",
-      headers: {
-        Authorization: `Bearer ${process.env.LINEAR_OAUTH_TOKEN}`,
-      },
-    },
-  ],
-});
-```
-
-**Note**: For OAuth-based servers, obtain tokens through the provider's OAuth flow (outside the sandbox) beforehand. Interactive OAuth flows are not supported inside sandbox environments.
-
----
-
-## Storage for Compaction
-
-ctx-zip uses the local filesystem to persist tool outputs during compaction. Tool results are written as JSON files that can be read back using the `readFile` and `grepAndSearchFile` tools.
-
-### Local Filesystem
-
-Compaction writes tool outputs to the local filesystem. You can specify a directory using a `file://` URI or by constructing a `FileAdapter` instance.
-
-**Using a URI**:
-```typescript
-await compact(messages, { 
-  baseDir: "file:///var/tmp/ctx-zip" 
-});
-```
-
-**Using FileAdapter**:
-```typescript
-import { FileAdapterClass as FileAdapter } from "ctx-zip";
-
-await compact(messages, {
-  baseDir: new FileAdapter({ baseDir: "/var/tmp/ctx-zip" }),
-});
-```
-
-**Default behavior**: If `baseDir` is omitted, files are written to `process.cwd()`.
-
-**File organization**: Files are organized as `{baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json`
-
-### Session-Based Organization
-
-Organize tool results by session for better file management:
-
-```typescript
-import { FileAdapterClass as FileAdapter } from "ctx-zip";
-
-const storageAdapter = new FileAdapter({
-  baseDir: "/path/to/storage",
-  sessionId: "my-session-123",
-});
-
-await compact(messages, {
-  baseDir: storageAdapter,
-  sessionId: "my-session-123",
-});
-```
-
-Files will be organized as:
-- Path: `{baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json`
-- Example: `.sandbox/my-session-123/tool-results/fetchEmails-001.json`
-
-**Note**: For serverless deployments or distributed systems, ensure the filesystem is accessible across all instances, or use a shared filesystem mount.
-
----
-
-## Combining Techniques
-
-For maximum effectiveness, combine both techniques. You can also mix MCP tools with standard AI SDK tools.
-
-### Example: Compaction with Progressive Discovery
-
-```typescript
-import { generateText, stepCountIs } from "ai";
-import {
-  compact,
-  createReadFileTool,
-  createGrepAndSearchFileTool,
-  SandboxExplorer,
-} from "ctx-zip";
-
-// 1. Set up MCP Sandbox Explorer for progressive tool discovery
-const explorer = await SandboxExplorer.create({
-  servers: [
-    { name: "grep-app", url: "https://mcp.grep.app" },
-  ],
-});
-
-await explorer.generateFileSystem();
-const sandboxTools = explorer.getAllTools();
-
-// 2. Set up compaction with reader tools and boundary management
-const storageUri = `file://${process.cwd()}`;
-const readerTools = {
-  readFile: createReadFileTool(),
-  grepAndSearchFile: createGrepAndSearchFileTool(),
-};
-
-const result = await generateText({
-  model: "openai/gpt-4.1-mini",
-  tools: {
-    ...sandboxTools,      // Progressive discovery tools
-    ...readerTools,       // Compaction reader tools
-    // ... your other tools
-  },
-  stopWhen: stepCountIs(20),
-  prompt: "Research and summarize findings",
-  prepareStep: async ({ messages }) => {
-    // Apply compaction with boundary management
-    const compacted = await compact(messages, {
-      baseDir: storageUri,
-      boundary: { type: "keep-last", count: 15 }, // Preserve recent context
-    });
-    
-    return { messages: compacted };
-  },
-});
-
-await explorer.cleanup();
-```
-
-This approach:
-- Uses progressive discovery to avoid loading all MCP tools upfront
-- Compacts tool outputs to keep context lean
-- Preserves recent context while compacting older messages
-- Provides reader tools for on-demand access to persisted data
-
-### Example: Combining MCP Tools with Standard AI SDK Tools
-
-```typescript
-import { generateText, stepCountIs, tool } from "ai";
-import { z } from "zod";
-import {
-  SandboxExplorer,
-} from "ctx-zip";
-
-// Define your local tools
-const weatherTool = tool({
-  description: "Get the weather in a location",
-  inputSchema: z.object({
-    location: z.string().describe("The location to get the weather for"),
-  }),
-  async execute({ location }) {
-    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
-    return { location, temperature, units: "°F" };
-  },
-});
-
-const calculatorTool = tool({
-  description: "Perform basic arithmetic operations",
-  inputSchema: z.object({
-    operation: z.enum(["add", "subtract", "multiply", "divide"]),
-    a: z.number(),
-    b: z.number(),
-  }),
-  async execute({ operation, a, b }) {
-    switch (operation) {
-      case "add":
-        return { result: a + b };
-      case "subtract":
-        return { result: a - b };
-      case "multiply":
-        return { result: a * b };
-      case "divide":
-        return { result: a / b };
-    }
-  },
-});
-
-// Unified sandbox explorer with both MCP and standard tools
-const explorer = await SandboxExplorer.create({
-  servers: [
-    { name: "grep-app", url: "https://mcp.grep.app" },
-  ],
-  standardTools: {
-    weather: weatherTool,
-    calculator: calculatorTool,
-  },
-  standardToolOptions: {
-    title: "Local AI SDK Tools",
-  },
-});
-
-await explorer.generateFileSystem();
-
-const sandboxTools = explorer.getAllTools();
-
-const result = await generateText({
-  model: "openai/gpt-4.1-mini",
-  tools: {
-    ...sandboxTools, // Sandbox exploration tools (ls, cat, grep, exec)
-    weather: weatherTool, // Original local tools
-    calculator: calculatorTool,
-  },
-  stopWhen: stepCountIs(20),
-  prompt: `You have access to:
-  - MCP tools from grep.app (in ./servers/)
-  - Local tools (weather, calculator) with source code in ./local-tools/
-  
-  First, use sandbox_ls to explore available tools, then search GitHub for
-  weather-related code and calculate the average temperature.`,
-});
-
-console.log(result.text);
-
-await explorer.cleanup();
-```
-
-This approach:
-- **MCP tools**: Transformed and available for exploration in `./servers/`
-- **AI SDK tools**: Transformed and available for inspection in `./local-tools/`
-- **Single sandbox**: Both tool types coexist in the same environment
-- **Agent can explore**: Use `sandbox_cat` to understand any tool implementation
-- **Tool composition**: Write scripts that use both MCP and local tools together
-
----
-
-## API Reference
-
-### Compaction
-
-- **`compact(messages, options)`**: Compact messages by persisting tool outputs
-- **`CompactOptions`**: Configuration interface for compaction
-- **`Boundary`**: Type for boundary strategies
-
-### Tools
-
-- **`createReadFileTool(options?)`**: Tool for reading persisted files
-- **`createGrepAndSearchFileTool(options?)`**: Tool for searching persisted files
-
-### Sandbox Code Generation
-
-**MCP Tools**:
-- **`SandboxExplorer.create(config)`**: Initialize sandbox explorer
-- **`SandboxExplorer.generateFileSystem()`**: Fetch MCP tools, generate code, and write standard tools
-- **`SandboxExplorer.getAllTools()`**: Get all exploration and execution tools
-- **`SandboxExplorer.cleanup()`**: Stop sandbox and clean up
-
-**Standard Tool Generation**:
-- Configure `standardTools` and `standardToolOptions` when calling `SandboxExplorer.create({ ... })`
-- **`ToolCodeGenerationOptions`**: Configuration for tool code generation
-- **`ToolCodeGenerationResult`**: Result with file paths and metadata
-
-### Sandbox Providers
-
-- **`VercelSandboxProvider.create(options)`**: Create Vercel sandbox
-- **`E2BSandboxProvider.create(options)`**: Create E2B sandbox
-- **`LocalSandboxProvider.create(options)`**: Create local sandbox
-
-### Storage
-
-- **`FileAdapter`**: Interface for filesystem storage adapters
-- **`createFileAdapter(uriOrAdapter)`**: Create filesystem adapter from `file://` URI or FileAdapter instance
-- **`FileAdapterClass`**: Base class for filesystem adapters
-
-### Utilities
-
-- **`detectWindowStart(messages, boundary)`**: Determine compaction window start
-- **`messageHasTextContent(message)`**: Check if message has text content
-- **`grepObject(adapter, key, regex)`**: Search persisted files
 
 ---
 
 ## Examples
 
-The library includes complete working examples:
+See the `examples/` directory:
 
-**MCP Tool Transformation**:
-```bash
-npm run example:mcp-vercel  # MCP tools with Vercel sandbox
-npm run example:mcp-e2b     # MCP tools with E2B sandbox
-npm run example:mcp-local   # MCP tools with Local sandbox (great for debugging)
-```
+- **`examples/mcp/`** - MCP server integration with grep.app
+  - `local_mcp_search.ts` - Local sandbox
+  - `e2b_mcp_search.ts` - E2B sandbox
+  - `vercel_mcp_search.ts` - Vercel sandbox
+  
+- **`examples/tools/`** - AI SDK tool transformation
+  - `weather_tool_sandbox.ts` - Transform and explore standard tools
 
-**AI SDK Tool Transformation**:
-```bash
-npm run example:tools-weather          # Weather tool (all providers)
-npm run example:tools-weather-local    # Weather tool with local sandbox
-npm run example:tools-weather-vercel   # Weather tool with Vercel sandbox
-npm run example:tools-weather-e2b      # Weather tool with E2B sandbox
-```
-
-See the [`examples/`](./examples/) directory for detailed examples with comments.
+- **`examples/ctx-management/`** - Full-featured compaction demo
+  - `email_management.ts` - Interactive email assistant with multi-environment support
 
 ---
 
-## Tips
+## API Overview
 
-- **Start with local filesystem**: Use `file://` URIs to specify storage directories for compaction
-- **Combine techniques**: Use compaction with boundary management + progressive discovery for maximum efficiency
-- **Preserve system instructions**: Use `keep-first` boundary to maintain detailed system prompts
-- **Monitor token usage**: Track before/after token counts to measure effectiveness
-- **Use session IDs**: Organize persisted files by session for easier debugging and cleanup
-- **Pair with AI SDK loop control**: Use `prepareStep` to implement custom message retention strategies
+### SandboxManager
+
+```typescript
+class SandboxManager {
+  // Create
+  static async create(config?: {
+    sandboxProvider?: SandboxProvider,
+    sandboxOptions?: LocalSandboxOptions,
+  }): Promise<SandboxManager>
+
+  // Register tools
+  async register(options: {
+    servers?: MCPServerConfig[],
+    standardTools?: Record<string, Tool>,
+    standardToolOptions?: ToolCodeGenerationOptions,
+  }): Promise<void>
+
+  // Get tools
+  getAllTools(): Record<string, Tool>
+  getExplorationTools(): Record<string, Tool>
+  getExecutionTool(): Record<string, Tool>
+
+  // Get paths
+  getServersDir(): string
+  getLocalToolsDir(): string
+  getUserCodeDir(): string
+  getCompactDir(): string
+  getWorkspacePath(): string
+
+  // File adapter for compaction
+  getFileAdapter(options?: {
+    prefix?: string,
+    sessionId?: string,
+  }): FileAdapter
+
+  // Static helper
+  static createLocalFileAdapter(options: LocalFileAdapterOptions): FileAdapter
+
+  // Cleanup
+  async cleanup(): Promise<void>
+}
+```
+
+### Compaction
+
+```typescript
+function compact(
+  messages: ModelMessage[],
+  options: CompactOptions
+): Promise<ModelMessage[]>
+
+interface CompactOptions {
+  storage: FileAdapter | string,
+  boundary?: Boundary,
+  sessionId?: string,
+  fileReaderTools?: string[],
+}
+
+type Boundary = 
+  | "last-turn"
+  | "all"
+  | { type: "keep-first"; count: number }
+  | { type: "keep-last"; count: number }
+  | { type: "pre", start: number }
+```
+
+### Reader Tools
+
+```typescript
+function createReadFileTool(options?: {
+  storage?: FileAdapter | string,
+  description?: string,
+}): Tool
+
+function createGrepAndSearchFileTool(options?: {
+  storage?: FileAdapter | string,
+  description?: string,
+}): Tool
+```
 
 ---
 
-Built with ❤️ by the team behind [Langtrace](https://langtrace.ai) and [Zest](https://heyzest.ai).
+## TypeScript Support
+
+Full TypeScript support with exported types:
+
+```typescript
+import type {
+  SandboxProvider,
+  FileAdapter,
+  CompactOptions,
+  Boundary,
+  E2BSandboxOptions,
+  LocalSandboxOptions,
+  VercelSandboxOptions,
+} from "ctx-zip";
+```
+
+---
+
+## License
+
+MIT
+
+---
+
+## Contributing
+
+Contributions welcome! Please open an issue or PR.
