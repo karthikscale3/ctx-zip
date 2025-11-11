@@ -1,6 +1,12 @@
 // SandboxManager - unified sandbox environment for MCP and standard tools
 
 import type { Tool } from "ai";
+import {
+  LocalFileAdapter,
+  SandboxFileAdapter,
+  type FileAdapter,
+  type LocalFileAdapterOptions,
+} from "./file-adapter.js";
 import { writeFilesToSandbox } from "./file-generator.js";
 import {
   LocalSandboxProvider,
@@ -31,6 +37,7 @@ export class SandboxManager {
   private readonly serversDir: string;
   private readonly localToolsDir: string;
   private readonly userCodeDir: string;
+  private readonly compactDir: string;
 
   private serverToolsMap: ServerToolsMap = {};
   private standardToolsResult?: ToolCodeGenerationResult;
@@ -40,10 +47,26 @@ export class SandboxManager {
     this.workspacePath = sandboxProvider.getWorkspacePath();
     this.explorationRoot = this.workspacePath;
 
-    // Define the three standard directories
+    // Define the four standard directories
     this.serversDir = `${this.workspacePath}/servers`;
     this.localToolsDir = `${this.workspacePath}/local-tools`;
     this.userCodeDir = `${this.workspacePath}/user-code`;
+    this.compactDir = `${this.workspacePath}/compact`;
+  }
+
+  /**
+   * Create a local file adapter for writing to the local filesystem (no sandbox).
+   * Use this for local development/testing without a sandbox provider.
+   * By default, files are written to the compact directory.
+   *
+   * @param options - Configuration for the local file adapter
+   * @param options.baseDir - The base directory path
+   * @param options.prefix - Optional subdirectory prefix (defaults to "compact")
+   * @param options.sessionId - Optional session ID for organizing files
+   * @returns A FileAdapter instance for local filesystem operations
+   */
+  static createLocalFileAdapter(options: LocalFileAdapterOptions): FileAdapter {
+    return new LocalFileAdapter(options);
   }
 
   /**
@@ -66,7 +89,7 @@ export class SandboxManager {
 
     const manager = new SandboxManager(provider);
 
-    // Create the three standard directories
+    // Create the four standard directories
     console.log("\n🔧 Initializing sandbox directories...");
     await manager.createDirectoryStructure();
     console.log("✓ Sandbox directory structure initialized");
@@ -75,10 +98,15 @@ export class SandboxManager {
   }
 
   /**
-   * Create the standard directory structure (servers, local-tools, user-code)
+   * Create the standard directory structure (servers, local-tools, user-code, compact)
    */
   private async createDirectoryStructure(): Promise<void> {
-    const dirs = [this.serversDir, this.localToolsDir, this.userCodeDir];
+    const dirs = [
+      this.serversDir,
+      this.localToolsDir,
+      this.userCodeDir,
+      this.compactDir,
+    ];
 
     for (const dir of dirs) {
       const mkdirResult = await this.sandboxProvider.runCommand({
@@ -240,10 +268,37 @@ export class SandboxManager {
   }
 
   /**
+   * Get the path to the compact directory (for compacted messages)
+   */
+  getCompactDir(): string {
+    return this.compactDir;
+  }
+
+  /**
    * Get the workspace path
    */
   getWorkspacePath(): string {
     return this.workspacePath;
+  }
+
+  /**
+   * Get a file adapter for reading/writing files in the sandbox.
+   * By default, files are written to the compact directory.
+   * Useful for tool result compaction and other file operations.
+   *
+   * @param options - Optional configuration for the file adapter
+   * @param options.prefix - Optional subdirectory prefix inside sandbox workspace (defaults to "compact")
+   * @param options.sessionId - Optional session ID for organizing files (creates sessionId/tool-results/ structure)
+   */
+  getFileAdapter(options?: {
+    prefix?: string;
+    sessionId?: string;
+  }): FileAdapter {
+    return new SandboxFileAdapter({
+      sandboxProvider: this.sandboxProvider,
+      prefix: options?.prefix ?? "compact",
+      sessionId: options?.sessionId,
+    });
   }
 
   /**

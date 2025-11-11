@@ -1,32 +1,8 @@
 // Public API barrel for npm package consumers
 
 // Tool Results Compactor
-export {
-  compactMessages,
-  createFileAdapter,
-  detectWindowStart,
-  FileAdapterClass,
-  fileUriToOptions,
-  grepObject,
-  messageHasTextContent,
-  resolveFileUriFromBaseDir,
-  SandboxFileAdapter,
-  writeToolResultsToFileStrategy,
-} from "./tool-results-compactor/index";
-export type {
-  Boundary,
-  CompactOptions,
-  FileAdapter,
-  FileAdapterOptions,
-  FileReadParams,
-  FileWriteParams,
-  FileWriteResult,
-  GrepResultLine,
-  PersistedToolResult,
-  SandboxFileAdapterOptions,
-  UriOrAdapter,
-  WriteToolResultsToFileOptions,
-} from "./tool-results-compactor/index";
+export { compact } from "./tool-results-compactor/index";
+export type { Boundary, CompactOptions } from "./tool-results-compactor/index";
 
 // Tools
 export { createGrepAndSearchFileTool, createReadFileTool } from "./tools/index";
@@ -44,6 +20,11 @@ export {
 } from "./sandbox-code-generator/index";
 export type {
   E2BSandboxOptions,
+  FileAdapter,
+  FileReadParams,
+  FileWriteParams,
+  FileWriteResult,
+  LocalFileAdapterOptions,
   LocalSandboxOptions,
   SandboxProvider,
   SandboxProviderOptions,

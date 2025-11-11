@@ -9,7 +9,7 @@
     {
       "id": "msg_001_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "AI SDK: New features, examples, and roadmap",
       "snippet": "Explore streaming tools, context compaction, and multi-turn memory improvements.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -21,7 +21,7 @@
     {
       "id": "msg_002_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Guillermo Rauch", "email": "rauchg@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Next.js Conf 2025 — keynotes, workshops, and launches",
       "snippet": "Join us at Next.js Conf. We'll share what's next for the web and Vercel.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -33,7 +33,7 @@
     {
       "id": "msg_003_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Karthik", "email": "karthik@ctx-zip.org" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Announcing ctx-zip: open source context compaction",
       "snippet": "We launched ctx-zip, a robust approach to message compaction across tools.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -45,7 +45,7 @@
     {
       "id": "msg_004_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Vercel", "email": "team@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Vercel AI SDK updates and new examples",
       "snippet": "Read about tool results persistence, Blob storage, and file adapters.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -57,7 +57,7 @@
     {
       "id": "msg_005_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "GitHub", "email": "noreply@github.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "[repo] 3 issues assigned to you",
       "snippet": "New issues require your review. Labels: bug, enhancement.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -69,7 +69,7 @@
     {
       "id": "msg_006_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Stripe", "email": "support@stripe.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Payout initiated",
       "snippet": "Your latest payout will arrive in 2-3 business days.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -81,7 +81,7 @@
     {
       "id": "msg_007_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Linear", "email": "updates@linear.app" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Linear Weekly: roadmap and performance",
       "snippet": "A faster issue list, keyboard improvements, and automation rules.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -93,7 +93,7 @@
     {
       "id": "msg_008_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "OpenAI", "email": "noreply@openai.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "API updates: new models and pricing",
       "snippet": "We've introduced new endpoints and lowered pricing for key models.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -105,7 +105,7 @@
     {
       "id": "msg_009_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Slack", "email": "notifications@slack.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "You were mentioned in #product-design",
       "snippet": "Check the thread for design review comments.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -117,7 +117,7 @@
     {
       "id": "msg_010_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Jira", "email": "noreply@jira.atlassian.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Ticket PROJ-421 moved to In Progress",
       "snippet": "A teammate started working on your task.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -129,7 +129,7 @@
     {
       "id": "msg_011_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Acme Corp", "email": "updates@acme.example" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Quarterly review and next steps",
       "snippet": "Let's discuss results and goals for Q4.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -141,7 +141,7 @@
     {
       "id": "msg_012_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "AWS", "email": "no-reply@amazonaws.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Cost anomaly detected",
       "snippet": "Spending exceeded your alert threshold in us-east-1.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -153,7 +153,7 @@
     {
       "id": "msg_013_akshdoiwnuuxjfo121ejxjasks",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Deep dive: tool result persistence",
       "snippet": "How to store tool output in Blob and local file adapters.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -165,7 +165,7 @@
     {
       "id": "msg_014",
       "from": { "name": "PagerDuty", "email": "alerts@pagerduty.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Incident PD-9981 resolved",
       "snippet": "Root cause identified and mitigations applied.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -177,7 +177,7 @@
     {
       "id": "msg_015",
       "from": { "name": "Google Cloud", "email": "noreply@googlecloud.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "GKE maintenance scheduled",
       "snippet": "A node pool update is scheduled for your cluster.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -189,7 +189,7 @@
     {
       "id": "msg_016",
       "from": { "name": "npm", "email": "support@npmjs.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Security advisory for a dependency",
       "snippet": "A vulnerability was reported in 'left-pad-plus'.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -201,7 +201,7 @@
     {
       "id": "msg_017",
       "from": { "name": "Notion", "email": "team@makenotion.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "What's new in Notion",
       "snippet": "AI autofill, database templates, and integrations.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -213,7 +213,7 @@
     {
       "id": "msg_018",
       "from": { "name": "Figma", "email": "no-reply@figma.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Design handoff: Dashboard v3",
       "snippet": "Your developers were invited to the new file.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -224,8 +224,11 @@
     },
     {
       "id": "msg_019",
-      "from": { "name": "Google Calendar", "email": "calendar-notification@google.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "from": {
+        "name": "Google Calendar",
+        "email": "calendar-notification@google.com"
+      },
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Event reminder: 1:1 with PM",
       "snippet": "Starts in 30 minutes.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -237,7 +240,7 @@
     {
       "id": "msg_020",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Example: compacting tool outputs to storage",
       "snippet": "A practical guide to keeping conversation context lean.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -249,7 +252,7 @@
     {
       "id": "msg_021",
       "from": { "name": "Sentry", "email": "alerts@sentry.io" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Spike in TypeError: cannot read properties of undefined",
       "snippet": "90 events in the last 10 minutes.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -261,7 +264,7 @@
     {
       "id": "msg_022",
       "from": { "name": "DataDog", "email": "no-reply@datadoghq.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "APM Weekly",
       "snippet": "Trace search improvements and flamegraph tips.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -273,7 +276,7 @@
     {
       "id": "msg_023",
       "from": { "name": "DocuSign", "email": "no-reply@docusign.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Please sign: NDA",
       "snippet": "A document requires your signature.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -285,7 +288,7 @@
     {
       "id": "msg_024",
       "from": { "name": "Netlify", "email": "team@netlify.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Deploy succeeded: marketing site",
       "snippet": "Your site is live.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -297,7 +300,7 @@
     {
       "id": "msg_025",
       "from": { "name": "Vercel", "email": "team@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Shipping faster with Edge Functions",
       "snippet": "Learn patterns for global low-latency apps.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -309,7 +312,7 @@
     {
       "id": "msg_026",
       "from": { "name": "Heroku", "email": "support@heroku.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Heroku changelog",
       "snippet": "Dyno updates and platform changes.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -321,7 +324,7 @@
     {
       "id": "msg_027",
       "from": { "name": "DigitalOcean", "email": "no-reply@digitalocean.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Invoice available",
       "snippet": "Your latest invoice is ready.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -333,7 +336,7 @@
     {
       "id": "msg_028",
       "from": { "name": "GitHub", "email": "noreply@github.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Dependabot update",
       "snippet": "1 security update available.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -345,7 +348,7 @@
     {
       "id": "msg_029",
       "from": { "name": "Calendly", "email": "no-reply@calendly.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Meeting scheduled: Partner sync",
       "snippet": "Tue 10:00am - 10:30am.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -357,7 +360,7 @@
     {
       "id": "msg_030",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "New: grep and search file tools",
       "snippet": "Use grepAndSearchFile to explore persisted outputs.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -369,7 +372,7 @@
     {
       "id": "msg_031",
       "from": { "name": "Docker", "email": "info@docker.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Docker Desktop update",
       "snippet": "Bug fixes and performance improvements.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -381,7 +384,7 @@
     {
       "id": "msg_032",
       "from": { "name": "OpenAI", "email": "noreply@openai.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Best practices for tool calling",
       "snippet": "Design tools with clear contracts and idempotent behavior.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -393,7 +396,7 @@
     {
       "id": "msg_033",
       "from": { "name": "Cloudflare", "email": "noreply@cloudflare.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "R2 usage report",
       "snippet": "Storage usage increased 12% this month.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -405,7 +408,7 @@
     {
       "id": "msg_034",
       "from": { "name": "MongoDB", "email": "no-reply@mongodb.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Cluster metrics weekly",
       "snippet": "Your M10 cluster latency is stable.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -417,7 +420,7 @@
     {
       "id": "msg_035",
       "from": { "name": "Algolia", "email": "team@algolia.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Search analytics",
       "snippet": "Top queries and no-results searches.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -429,7 +432,7 @@
     {
       "id": "msg_036",
       "from": { "name": "Segment", "email": "notifications@segment.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "New source connected: web-app",
       "snippet": "Events flowing successfully.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -441,7 +444,7 @@
     {
       "id": "msg_037",
       "from": { "name": "GitLab", "email": "noreply@gitlab.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Pipeline failed on main",
       "snippet": "lint:eslint encountered an error.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -453,7 +456,7 @@
     {
       "id": "msg_038",
       "from": { "name": "Twilio", "email": "no-reply@twilio.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "SMS usage threshold reached",
       "snippet": "You've used 80% of your monthly quota.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -465,7 +468,7 @@
     {
       "id": "msg_039",
       "from": { "name": "Postmark", "email": "support@postmarkapp.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Delivery rate weekly",
       "snippet": "99.2% delivery, 0.1% bounce.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -477,9 +480,9 @@
     {
       "id": "msg_040",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Patterns: multi-step conversations with tools",
-      "snippet": "Use prepareStep and compactMessages to keep context fresh.",
+      "snippet": "Use prepareStep and compact to keep context fresh.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
       "receivedAt": "2025-09-24T12:10:00.000Z",
       "read": true,
@@ -488,8 +491,11 @@
     },
     {
       "id": "msg_041",
-      "from": { "name": "Open Source Initiative", "email": "announce@opensource.org" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "from": {
+        "name": "Open Source Initiative",
+        "email": "announce@opensource.org"
+      },
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Maintainer guide updated",
       "snippet": "Best practices for triage and releases.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -501,7 +507,7 @@
     {
       "id": "msg_042",
       "from": { "name": "Calendly", "email": "no-reply@calendly.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Rescheduled: onboarding session",
       "snippet": "Moved to Wed 3pm.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -513,7 +519,7 @@
     {
       "id": "msg_043",
       "from": { "name": "Vercel", "email": "team@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Case study: Shipping a global AI app",
       "snippet": "Learn how teams deploy AI to production on Vercel.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -525,7 +531,7 @@
     {
       "id": "msg_044",
       "from": { "name": "TypeScript", "email": "announce@typescriptlang.org" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "TypeScript 5.6 RC",
       "snippet": "Try the release candidate with new ergonomics.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -537,7 +543,7 @@
     {
       "id": "msg_045",
       "from": { "name": "JetBrains", "email": "news@jetbrains.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "IDE tips for productivity",
       "snippet": "Master shortcuts and refactors.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -549,7 +555,7 @@
     {
       "id": "msg_046",
       "from": { "name": "NPM", "email": "security@npmjs.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Token usage notification",
       "snippet": "A new token was used from a different IP.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -561,7 +567,7 @@
     {
       "id": "msg_047",
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Playground: multi-model comparisons",
       "snippet": "Evaluate prompts across models.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -573,7 +579,7 @@
     {
       "id": "msg_048",
       "from": { "name": "Guillermo Rauch", "email": "rauchg@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Next.js Conf: speakers announced",
       "snippet": "See the full lineup and schedule.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -585,7 +591,7 @@
     {
       "id": "msg_049",
       "from": { "name": "ctx-zip", "email": "announce@ctx-zip.org" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "ctx-zip roadmap and contribution guide",
       "snippet": "Help us add adapters and better heuristics.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -597,7 +603,7 @@
     {
       "id": "msg_050",
       "from": { "name": "Vercel", "email": "team@vercel.com" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "AI SDK: examples you can copy",
       "snippet": "Real-world patterns for tools and memory.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
@@ -609,7 +615,7 @@
     {
       "id": "msg_051",
       "from": { "name": "Zest", "email": "karthik@heyzest.ai" },
-      "to": [ { "name": "You", "email": "karthik@langtrace.ai" } ],
+      "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "Zest: Bring AI Coworkers to Slack that know your apps",
       "snippet": "Bring AI Coworkers to Slack that know your app",
       "body": "We are excited to announce that we are launching a new product called Zest. Zest is a tool that allows you to bring AI Coworkers to Slack that know your app. We are currently in beta and we would love to have you try it out. You can sign up for the beta at https://heyzest.ai. We are also looking for feedback on the product. Please let us know what you think.",

@@ -1,13 +1,16 @@
 import { tool } from "ai";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { isKnownKey } from "../tool-results-compactor/file-adapters/knownKeys";
-import { createFileAdapter } from "../tool-results-compactor/file-adapters/resolver";
+import { isKnownKey } from "../tool-results-compactor/lib/knownKeys";
+import {
+  createFileAdapter,
+  type UriOrAdapter,
+} from "../tool-results-compactor/lib/resolver";
 
 export interface ReadFileToolOptions {
   description?: string;
-  /** Default file system location used when input omitted. Accepts URI or adapter. */
-  baseDir?: unknown;
+  /** Storage location. Accepts FileAdapter instance or URI string. Defaults to current working directory. */
+  storage?: UriOrAdapter;
 }
 
 const defaultDescription = readFileSync(
@@ -16,6 +19,12 @@ const defaultDescription = readFileSync(
 );
 
 export function createReadFileTool(options: ReadFileToolOptions = {}) {
+  // If a FileAdapter is passed, use it directly. Otherwise create one from URI or default.
+  const adapter =
+    typeof options.storage === "object" && options.storage
+      ? options.storage
+      : createFileAdapter(options.storage);
+
   return tool({
     description: options.description ?? defaultDescription,
     inputSchema: z.object({
@@ -27,10 +36,6 @@ export function createReadFileTool(options: ReadFileToolOptions = {}) {
     }),
     async execute({ key }) {
       try {
-        const adapter = options.baseDir
-          ? createFileAdapter(options.baseDir as any)
-          : createFileAdapter();
-
         const storageUri = adapter.toString();
         if (!isKnownKey(storageUri, key)) {
           return {

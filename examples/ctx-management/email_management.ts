@@ -27,13 +27,12 @@ import prompts from "prompts";
 import { fetchModels } from "tokenlens";
 import { z } from "zod";
 import {
-  compactMessages,
+  compact,
   createGrepAndSearchFileTool,
   createReadFileTool,
   E2BSandboxProvider,
   FileAdapter,
-  FileAdapterClass,
-  SandboxFileAdapter,
+  SandboxManager,
   VercelSandboxProvider,
 } from "../../src";
 
@@ -137,7 +136,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
   if (environment === "local") {
     // Local file system storage
     storageBaseDir = path.resolve(process.cwd(), ".sandbox-local");
-    fileAdapter = new FileAdapterClass({
+    fileAdapter = SandboxManager.createLocalFileAdapter({
       baseDir: storageBaseDir,
       sessionId,
     });
@@ -148,15 +147,18 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       timeout: 1800000, // 30 minutes
     });
 
-    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
-    fileAdapter = new SandboxFileAdapter({
+    const sandboxManager = await SandboxManager.create({
       sandboxProvider,
+    });
+
+    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
+    fileAdapter = sandboxManager.getFileAdapter({
       sessionId,
     });
 
     cleanup = async () => {
       console.log("\n🧹 Cleaning up E2B sandbox...");
-      await sandboxProvider.stop();
+      await sandboxManager.cleanup();
     };
   } else if (environment === "vercel") {
     // Vercel sandbox storage
@@ -167,15 +169,18 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       vcpus: 4,
     });
 
-    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
-    fileAdapter = new SandboxFileAdapter({
+    const sandboxManager = await SandboxManager.create({
       sandboxProvider,
+    });
+
+    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
+    fileAdapter = sandboxManager.getFileAdapter({
       sessionId,
     });
 
     cleanup = async () => {
       console.log("\n🧹 Cleaning up Vercel sandbox...");
-      await sandboxProvider.stop();
+      await sandboxManager.cleanup();
     };
   } else {
     throw new Error(`Unknown environment: ${environment}`);
@@ -220,8 +225,8 @@ function createTools(fileAdapter: FileAdapter) {
         };
       },
     }),
-    readFile: createReadFileTool({ baseDir: fileAdapter }),
-    grepAndSearchFile: createGrepAndSearchFileTool({ baseDir: fileAdapter }),
+    readFile: createReadFileTool({ storage: fileAdapter }),
+    grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
   };
 }
 
@@ -441,8 +446,8 @@ async function main() {
       stats.estimatedTokensBefore = tokensBefore;
 
       // Compact the ENTIRE conversation
-      const compacted = await compactMessages(messages, {
-        baseDir: fileAdapter,
+      const compacted = await compact(messages, {
+        storage: fileAdapter,
         boundary: "all",
         sessionId: envConfig.sessionId,
       });

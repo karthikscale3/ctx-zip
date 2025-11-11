@@ -53,7 +53,7 @@ ctx-zip provides two complementary techniques for managing context efficiently. 
 ```typescript
 import { generateText, stepCountIs } from "ai";
 import {
-  compactMessages,
+  compact,
   createReadFileTool,
   createGrepAndSearchFileTool,
 } from "ctx-zip";
@@ -73,7 +73,7 @@ const result = await generateText({
   prompt: "Use tools to research, summarize, and cite sources.",
   prepareStep: async ({ messages }) => {
     // Compact tool outputs to storage with boundary control
-    const compacted = await compactMessages(messages, {
+    const compacted = await compact(messages, {
       baseDir: storageUri,
       boundary: "last-turn", // Compact only the latest turn
     });
@@ -144,7 +144,7 @@ Pair boundary management with AI SDK's `prepareStep` to implement a "last-N mess
 prepareStep: async ({ messages }) => {
   // Keep only last 50 messages, compact older ones
   const recentMessages = messages.slice(-50);
-  const compacted = await compactMessages(recentMessages, {
+  const compacted = await compact(recentMessages, {
     baseDir: storageUri,
     boundary: { type: "keep-last", count: 10 },
   });
@@ -442,7 +442,7 @@ Compaction writes tool outputs to the local filesystem. You can specify a direct
 
 **Using a URI**:
 ```typescript
-await compactMessages(messages, { 
+await compact(messages, { 
   baseDir: "file:///var/tmp/ctx-zip" 
 });
 ```
@@ -451,7 +451,7 @@ await compactMessages(messages, {
 ```typescript
 import { FileAdapterClass as FileAdapter } from "ctx-zip";
 
-await compactMessages(messages, {
+await compact(messages, {
   baseDir: new FileAdapter({ baseDir: "/var/tmp/ctx-zip" }),
 });
 ```
@@ -472,7 +472,7 @@ const storageAdapter = new FileAdapter({
   sessionId: "my-session-123",
 });
 
-await compactMessages(messages, {
+await compact(messages, {
   baseDir: storageAdapter,
   sessionId: "my-session-123",
 });
@@ -495,7 +495,7 @@ For maximum effectiveness, combine both techniques. You can also mix MCP tools w
 ```typescript
 import { generateText, stepCountIs } from "ai";
 import {
-  compactMessages,
+  compact,
   createReadFileTool,
   createGrepAndSearchFileTool,
   SandboxExplorer,
@@ -529,7 +529,7 @@ const result = await generateText({
   prompt: "Research and summarize findings",
   prepareStep: async ({ messages }) => {
     // Apply compaction with boundary management
-    const compacted = await compactMessages(messages, {
+    const compacted = await compact(messages, {
       baseDir: storageUri,
       boundary: { type: "keep-last", count: 15 }, // Preserve recent context
     });
@@ -641,7 +641,7 @@ This approach:
 
 ### Compaction
 
-- **`compactMessages(messages, options)`**: Compact messages by persisting tool outputs
+- **`compact(messages, options)`**: Compact messages by persisting tool outputs
 - **`CompactOptions`**: Configuration interface for compaction
 - **`Boundary`**: Type for boundary strategies
 

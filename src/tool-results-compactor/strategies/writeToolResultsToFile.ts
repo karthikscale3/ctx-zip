@@ -1,7 +1,20 @@
 import type { ModelMessage } from "ai";
 import { randomUUID } from "node:crypto";
-import { registerKnownKey } from "../file-adapters/knownKeys";
-import type { FileAdapter, PersistedToolResult } from "../file-adapters/types";
+import type { FileAdapter } from "../../sandbox-code-generator/file-adapter.js";
+import { registerKnownKey } from "../lib/knownKeys.js";
+
+/**
+ * Metadata wrapper for persisted tool results
+ */
+interface PersistedToolResult {
+  metadata: {
+    toolName: string;
+    timestamp: string;
+    toolCallId: string;
+    sessionId: string;
+  };
+  output: any;
+}
 
 function formatStoragePathForDisplay(storageUri: string, key: string): string {
   if (!storageUri) return key;

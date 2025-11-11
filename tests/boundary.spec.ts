@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 import assert from "node:assert/strict";
 import {
-  compactMessages,
+  compact,
   type Boundary,
   type FileAdapter,
   type FileWriteParams,
@@ -133,8 +133,8 @@ function makeConversation(): ModelMessage[] {
 async function run(boundary: Boundary) {
   const adapter = new MemoryFileAdapter("test");
   const messages = makeConversation();
-  const compacted = await compactMessages(messages, {
-    baseDir: adapter,
+  const compacted = await compact(messages, {
+    storage: adapter,
     boundary,
   });
   // eslint-disable-next-line no-console

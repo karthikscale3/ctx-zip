@@ -1,6 +1,6 @@
 import type { ModelMessage } from "ai";
-import { createFileAdapter } from "./file-adapters/resolver";
-import type { FileAdapter, UriOrAdapter } from "./file-adapters/types";
+import type { FileAdapter } from "../sandbox-code-generator/file-adapter.js";
+import { createFileAdapter, type UriOrAdapter } from "./lib/resolver.js";
 import {
   writeToolResultsToFileStrategy,
   type Boundary,
@@ -16,10 +16,10 @@ export interface CompactOptions {
    */
   strategy?: "write-tool-results-to-file" | string;
   /**
-   * File system location to persist tool outputs. Accepts either a URI (e.g., "file:///path/to/dir")
-   * or a FileAdapter instance. If omitted, defaults to the current working directory.
+   * Storage location to persist tool outputs. Accepts FileAdapter instance or URI string.
+   * If omitted, defaults to the current working directory.
    */
-  baseDir?: UriOrAdapter;
+  storage?: UriOrAdapter;
   /**
    * Controls where the compaction window starts. Defaults to "all".
    * - "all": Compact entire conversation
@@ -40,7 +40,7 @@ export interface CompactOptions {
   fileReaderTools?: string[];
   /**
    * Optional session ID to organize persisted tool results.
-   * Files will be organized as: {baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json
+   * Files will be organized as: {storage}/{sessionId}/tool-results/{toolName}-{seq}.json
    * If omitted, a random session ID will be generated.
    */
   sessionId?: string;
@@ -50,14 +50,17 @@ export interface CompactOptions {
  * Compact a sequence of messages by writing large tool outputs to a configured storage and
  * replacing them with succinct references, keeping your model context lean.
  */
-export async function compactMessages(
+export async function compact(
   messages: ModelMessage[],
   options: CompactOptions = {}
 ): Promise<ModelMessage[]> {
   const strategy = options.strategy ?? "write-tool-results-to-file";
   // Default: compact the entire conversation
   const boundary: Boundary = options.boundary ?? "all";
-  const adapter: FileAdapter = createFileAdapter(options.baseDir);
+  const adapter: FileAdapter =
+    typeof options.storage === "object" && options.storage
+      ? options.storage
+      : createFileAdapter(options.storage);
   const toolResultSerializer =
     options.toolResultSerializer ?? ((v) => JSON.stringify(v, null, 2));
 
@@ -79,5 +82,4 @@ export async function compactMessages(
   }
 }
 
-export type { FileAdapter } from "./file-adapters/types";
 export type { Boundary } from "./strategies/writeToolResultsToFile";

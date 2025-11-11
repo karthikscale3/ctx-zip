@@ -1,5 +1,5 @@
 import readline from "node:readline";
-import type { FileAdapter } from "./types";
+import type { FileAdapter } from "../../sandbox-code-generator/file-adapter.js";
 
 export interface GrepResultLine {
   lineNumber: number;

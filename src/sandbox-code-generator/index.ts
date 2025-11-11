@@ -5,6 +5,13 @@ export {
   type E2BSandboxOptions,
 } from "./e2b-sandbox-provider.js";
 export {
+  type FileAdapter,
+  type FileReadParams,
+  type FileWriteParams,
+  type FileWriteResult,
+  type LocalFileAdapterOptions,
+} from "./file-adapter.js";
+export {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
