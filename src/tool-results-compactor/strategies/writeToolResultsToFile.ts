@@ -34,8 +34,6 @@ export function messageHasTextContent(message: ModelMessage | any): boolean {
 /**
  * Controls where the compaction window starts.
  *
- * - "last-turn": Start after the most recent assistant/user text message.
- *   Use this to compact only the latest turn and keep recent context intact. (Recommended default)
  * - "all": Start at the beginning. Use this to re-compact the full history
  *   or when earlier tool outputs also need persisting.
  * - { type: "keep-first", count: number }: Keep the first N messages intact and start
@@ -44,7 +42,6 @@ export function messageHasTextContent(message: ModelMessage | any): boolean {
  *   everything before them. Useful to preserve recent context while compacting older messages.
  */
 export type Boundary =
-  | "last-turn"
   | "all"
   | { type: "keep-first"; count: number }
   | { type: "keep-last"; count: number };
@@ -134,12 +131,7 @@ export function detectWindowRange(
     return { start: 0, endExclusive };
   }
 
-  if (boundary === "all") {
-    return { start: 0, endExclusive: Math.max(0, len - 1) };
-  }
-
-  const start = detectWindowStart(messages, boundary);
-  return { start, endExclusive: Math.max(0, len - 1) };
+  return { start: 0, endExclusive: Math.max(0, len - 1) };
 }
 
 /**

@@ -21,8 +21,7 @@ export interface CompactOptions {
    */
   baseDir?: UriOrAdapter;
   /**
-   * Controls where the compaction window starts. Defaults to "last-turn".
-   * - "last-turn": Compact only the latest turn
+   * Controls where the compaction window starts. Defaults to "all".
    * - "all": Compact entire conversation
    * - { type: "keep-first", count: N }: Keep first N messages intact
    * - { type: "keep-last", count: N }: Keep last N messages intact
@@ -56,8 +55,8 @@ export async function compactMessages(
   options: CompactOptions = {}
 ): Promise<ModelMessage[]> {
   const strategy = options.strategy ?? "write-tool-results-to-file";
-  // Default: compact only since the last assistant/user text turn
-  const boundary: Boundary = options.boundary ?? "last-turn";
+  // Default: compact the entire conversation
+  const boundary: Boundary = options.boundary ?? "all";
   const adapter: FileAdapter = createFileAdapter(options.baseDir);
   const toolResultSerializer =
     options.toolResultSerializer ?? ((v) => JSON.stringify(v, null, 2));
