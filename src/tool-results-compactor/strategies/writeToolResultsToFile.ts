@@ -1,7 +1,6 @@
 import type { ModelMessage } from "ai";
 import { randomUUID } from "node:crypto";
 import type { FileAdapter } from "../../sandbox-code-generator/file-adapter.js";
-import { registerKnownKey } from "../lib/knownKeys.js";
 
 /**
  * Metadata wrapper for persisted tool results
@@ -196,8 +195,6 @@ export async function writeToolResultsToFileStrategy(
     options.boundary
   );
 
-  // Track sequence numbers per tool name for better file organization
-  const toolSequences = new Map<string, number>();
   const sessionId = options.sessionId ?? `session-${randomUUID().slice(0, 8)}`;
 
   for (let i = windowStart; i < Math.min(endExclusive, msgs.length - 1); i++) {
@@ -208,7 +205,9 @@ export async function writeToolResultsToFileStrategy(
       if (!part || part.type !== "tool-result" || !part.output) continue;
 
       // Reference-only behavior for tools that read from storage
-      const defaultFileReaderNames = ["readFile", "grepAndSearchFile"];
+      // Note: Only readFile is included. grepAndSearchFile returns computed results
+      // (matches) that cannot be recreated, so we persist them instead.
+      const defaultFileReaderNames = ["readFile"];
       const configuredNames =
         options.fileReaderTools && options.fileReaderTools.length > 0
           ? options.fileReaderTools
@@ -220,16 +219,36 @@ export async function writeToolResultsToFileStrategy(
         let key: string | undefined;
         let storage: string | undefined;
 
-        const outputData = output?.value ?? output;
+        // Try multiple access patterns to find the data
+        let outputData = output;
+
+        // If output has a value property, try that first
+        if (
+          output &&
+          typeof output === "object" &&
+          output.value !== undefined
+        ) {
+          outputData = output.value;
+        }
+
+        // If output has a text property (AI SDK sometimes uses this), try that
+        if (
+          outputData &&
+          typeof outputData === "object" &&
+          outputData.text !== undefined
+        ) {
+          outputData = outputData.text;
+        }
+
         if (outputData && typeof outputData === "object") {
-          if (typeof (outputData as any).fileName === "string") {
-            fileName = (outputData as any).fileName;
+          if (typeof outputData.fileName === "string") {
+            fileName = outputData.fileName;
           }
-          if (typeof (outputData as any).key === "string") {
-            key = (outputData as any).key;
+          if (typeof outputData.key === "string") {
+            key = outputData.key;
           }
-          if (typeof (outputData as any).storage === "string") {
-            storage = (outputData as any).storage;
+          if (typeof outputData.storage === "string") {
+            storage = outputData.storage;
           }
         }
 
@@ -246,9 +265,7 @@ export async function writeToolResultsToFileStrategy(
           value: display,
         };
 
-        if (storage && key) {
-          registerKnownKey(storage, key);
-        }
+        // No need to register - files are read directly when they exist
         continue;
       }
 
@@ -291,14 +308,9 @@ export async function writeToolResultsToFileStrategy(
         }
       }
 
-      // Generate descriptive sequential file name
+      // Generate file name based on tool name (one file per tool, overwritten on subsequent calls)
       const toolName = part.toolName || "unknown";
-      const currentSeq = toolSequences.get(toolName) ?? 0;
-      const nextSeq = currentSeq + 1;
-      toolSequences.set(toolName, nextSeq);
-
-      const seqStr = String(nextSeq).padStart(3, "0");
-      const fileName = `${toolName}-${seqStr}.json`;
+      const fileName = `${toolName}.json`;
 
       // Wrap output with metadata
       const persistedResult: PersistedToolResult = {
@@ -326,7 +338,6 @@ export async function writeToolResultsToFileStrategy(
           key
         )}. Key: ${key}. Use the read/search tools to inspect its contents.`,
       };
-      registerKnownKey(adapterUri, key);
     }
   }
 

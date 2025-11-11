@@ -2,7 +2,6 @@ import { tool } from "ai";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { grepObject } from "../tool-results-compactor/lib/grep";
-import { isKnownKey } from "../tool-results-compactor/lib/knownKeys";
 import {
   createFileAdapter,
   type UriOrAdapter,
@@ -59,18 +58,7 @@ export function createGrepAndSearchFileTool(
       }
 
       try {
-        const storageUri = adapter.toString();
-        if (!isKnownKey(storageUri, key)) {
-          return {
-            key,
-            pattern,
-            flags: flags ?? "",
-            content:
-              "Tool cannot be used: unknown key. Use a key previously surfaced via 'Written to ... Key: <key>' or 'Read from storage ... Key: <key>'. If none exists, re-run the producing tool to persist and get a key.",
-            storage: storageUri,
-          };
-        }
-
+        // Try to search the file - if it exists, search it even if not in known keys
         const matches = await grepObject(adapter, key, regex);
         return {
           key,
@@ -86,7 +74,8 @@ export function createGrepAndSearchFileTool(
           flags: flags ?? "",
           content: `Error searching file: ${
             (err as Error).message
-          }. Are you sure the storage is correct? If yes, make the original tool call again with the same arguments instead of relying on readFile or grepAndSearchFile.`,
+          }. Make sure the key is correct and the file exists. If needed, re-run the producing tool to persist and get a key.`,
+          storage: adapter.toString(),
         };
       }
     },

@@ -480,7 +480,7 @@ await compact(messages, {
 
 Files will be organized as:
 - Path: `{baseDir}/{sessionId}/tool-results/{toolName}-{seq}.json`
-- Example: `.ctx-storage/my-session-123/tool-results/fetchEmails-001.json`
+- Example: `.sandbox/my-session-123/tool-results/fetchEmails-001.json`
 
 **Note**: For serverless deployments or distributed systems, ensure the filesystem is accessible across all instances, or use a shared filesystem mount.
 

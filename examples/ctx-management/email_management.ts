@@ -151,7 +151,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       sandboxProvider,
     });
 
-    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
+    storageBaseDir = path.resolve(process.cwd(), `.sandbox-${environment}`);
     fileAdapter = sandboxManager.getFileAdapter({
       sessionId,
     });
@@ -173,7 +173,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       sandboxProvider,
     });
 
-    storageBaseDir = path.resolve(process.cwd(), `.ctx-storage-${environment}`);
+    storageBaseDir = path.resolve(process.cwd(), `.sandbox-${environment}`);
     fileAdapter = sandboxManager.getFileAdapter({
       sessionId,
     });

@@ -16,11 +16,11 @@ coverage/
 # Generated MCP files from examples
 generated-mcp-files/
 
-# Local sandbox directory
-.sandbox/
-
 # Context compression storage
-.ctx-storage/
+.sandbox/
+.sandbox-local/
+.sandbox-e2b/
+.sandbox-vercel/
 
 # Environment files
 .env
