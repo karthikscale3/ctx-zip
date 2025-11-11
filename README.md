@@ -257,7 +257,7 @@ const result = await generateText({
     // Compact outputs after each turn
     const compacted = await compact(messages, {
       storage: fileAdapter,
-      boundary: "last-turn",
+      boundary: "all",
       sessionId: "my-session",
     });
     
@@ -304,8 +304,6 @@ Each tool overwrites its own file on subsequent calls (one file per tool type).
 Control which messages get compacted:
 
 ```typescript
-// 1. Last turn only (default) - compact new outputs each step
-boundary: "last-turn"
 
 // 2. All messages - re-compact entire conversation
 boundary: "all"
@@ -412,7 +410,7 @@ const result = await generateText({
   prepareStep: async ({ messages }) => {
     const compacted = await compact(messages, {
       storage: fileAdapter,
-      boundary: "last-turn",
+      boundary: "all",
       sessionId: "combined-session",
     });
     return { messages: compacted };
@@ -558,7 +556,6 @@ interface CompactOptions {
 }
 
 type Boundary = 
-  | "last-turn"
   | "all"
   | { type: "keep-first"; count: number }
   | { type: "keep-last"; count: number }
