@@ -71,8 +71,10 @@ export async function compact(
         adapter,
         toolResultSerializer,
         fileReaderTools: [
-          "readFile",
-          "grepAndSearchFile",
+          "sandbox_ls",
+          "sandbox_cat",
+          "sandbox_grep",
+          "sandbox_find",
           ...(options.fileReaderTools ?? []),
         ],
         sessionId: options.sessionId,

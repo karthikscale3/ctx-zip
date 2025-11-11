@@ -362,7 +362,7 @@
       "from": { "name": "Vercel AI SDK Team", "email": "ai@vercel.com" },
       "to": [{ "name": "You", "email": "karthik@langtrace.ai" }],
       "subject": "New: grep and search file tools",
-      "snippet": "Use grepAndSearchFile to explore persisted outputs.",
+      "snippet": "Use sandbox_grep to explore persisted outputs.",
       "body": "Thank you for taking the time to review this message. It contains a detailed update related to the subject line, including background context, current status, and any actions that may be required. The intention is to provide clear, practical information you can use immediately, without needing to track down additional references. Where relevant, we outline timelines, ownership, and potential risks to watch. If something needs attention, it is summarized plainly and repeated near the end. We also include helpful links or pointers to follow-up threads when applicable. Please reply if anything is unclear, if you need more depth, or if priorities have changed since the last update.",
       "receivedAt": "2025-09-24T17:35:00.000Z",
       "read": true,

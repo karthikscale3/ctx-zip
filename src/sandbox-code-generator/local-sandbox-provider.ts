@@ -144,8 +144,6 @@ export class LocalSandboxProvider implements SandboxProvider {
    */
   async runCommand(command: SandboxCommand): Promise<CommandResult> {
     const fullCommand = [command.cmd, ...command.args].join(" ");
-    console.log(`✓ Executing local command: ${fullCommand}`);
-    console.log(`  Working directory: ${this.cwd}`);
 
     try {
       // Use spawn for better output handling and long-running commands
@@ -166,15 +164,13 @@ export class LocalSandboxProvider implements SandboxProvider {
         proc.stdout?.on("data", (data) => {
           const chunk = data.toString();
           stdout += chunk;
-          // Real-time output for debugging
-          process.stdout.write(chunk);
+          // Don't write to stdout - it pollutes the output
         });
 
         proc.stderr?.on("data", (data) => {
           const chunk = data.toString();
           stderr += chunk;
-          // Real-time error output
-          process.stderr.write(chunk);
+          // Don't write to stderr - it pollutes the output
         });
 
         proc.on("close", (code) => {
@@ -189,10 +185,6 @@ export class LocalSandboxProvider implements SandboxProvider {
           reject(error);
         });
       });
-
-      console.log(`  Exit code: ${result.exitCode}`);
-      console.log(`  Stdout length: ${result.stdout.length} chars`);
-      console.log(`  Stderr length: ${result.stderr.length} chars`);
 
       return new LocalCommandResult(
         result.exitCode,

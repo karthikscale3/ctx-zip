@@ -13,7 +13,6 @@
     "example:tools-weather-vercel": "npm run example:tools-weather -- --provider=vercel",
     "example:tools-weather-e2b": "npm run example:tools-weather -- --provider=e2b",
     "build": "tsc -p tsconfig.json",
-    "postbuild": "mkdir -p dist/tools/descriptions && cp -R src/tools/descriptions/. dist/tools/descriptions/",
     "start": "node dist/index.js",
     "test": "tsx tests/*.ts",
     "prepublishOnly": "npm run build"

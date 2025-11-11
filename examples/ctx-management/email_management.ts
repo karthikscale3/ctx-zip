@@ -2,9 +2,15 @@
  * Interactive Email Assistant with Multi-Environment Support
  *
  * This example demonstrates context compression with support for multiple environments:
- * - Local: File system storage (no additional setup)
+ * - Local: Local sandbox with file system storage (no additional setup)
  * - E2B: Cloud sandbox provider (requires E2B_API_KEY)
  * - Vercel: Cloud sandbox provider (no additional setup currently)
+ *
+ * Features:
+ * - Automatically compacts large tool outputs to storage
+ * - Provides sandbox exploration tools (sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find)
+ * - Agent can read compacted files on-demand
+ * - Tracks token savings and costs
  *
  * Required Environment Variables:
  * - OPENAI_API_KEY (required for all environments)
@@ -28,10 +34,9 @@ import { fetchModels } from "tokenlens";
 import { z } from "zod";
 import {
   compact,
-  createGrepAndSearchFileTool,
-  createReadFileTool,
   E2BSandboxProvider,
   FileAdapter,
+  LocalSandboxProvider,
   SandboxManager,
   VercelSandboxProvider,
 } from "../../src";
@@ -45,6 +50,7 @@ interface EnvironmentConfig {
   storageBaseDir: string;
   sessionId: string;
   fileAdapter: FileAdapter;
+  sandboxManager: SandboxManager;
   cleanup?: () => Promise<void>; // Optional cleanup function for sandbox providers
 }
 
@@ -128,18 +134,33 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
     .toISOString()
     .slice(0, 10)}-${Date.now().toString(36)}`;
 
-  // Create file adapter based on environment
+  // Create sandbox manager and file adapter based on environment
   let fileAdapter: FileAdapter;
+  let sandboxManager: SandboxManager;
   let storageBaseDir: string;
   let cleanup: (() => Promise<void>) | undefined;
 
   if (environment === "local") {
-    // Local file system storage
+    // Local file system storage with local sandbox
+    console.log("Creating local sandbox...");
     storageBaseDir = path.resolve(process.cwd(), ".sandbox-local");
-    fileAdapter = SandboxManager.createLocalFileAdapter({
-      baseDir: storageBaseDir,
+    const sandboxProvider = await LocalSandboxProvider.create({
+      sandboxDir: storageBaseDir,
+      cleanOnCreate: false,
+    });
+
+    sandboxManager = await SandboxManager.create({
+      sandboxProvider,
+    });
+
+    fileAdapter = sandboxManager.getFileAdapter({
       sessionId,
     });
+
+    cleanup = async () => {
+      console.log("\n🧹 Cleaning up local sandbox...");
+      await sandboxManager.cleanup();
+    };
   } else if (environment === "e2b") {
     // E2B sandbox storage
     console.log("Creating E2B sandbox...");
@@ -147,7 +168,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       timeout: 1800000, // 30 minutes
     });
 
-    const sandboxManager = await SandboxManager.create({
+    sandboxManager = await SandboxManager.create({
       sandboxProvider,
     });
 
@@ -169,7 +190,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
       vcpus: 4,
     });
 
-    const sandboxManager = await SandboxManager.create({
+    sandboxManager = await SandboxManager.create({
       sandboxProvider,
     });
 
@@ -191,15 +212,22 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
     storageBaseDir,
     sessionId,
     fileAdapter,
+    sandboxManager,
     cleanup,
   };
 }
 
 /**
- * Create tools with the given file adapter
+ * Create tools with the given sandbox manager
  */
-function createTools(fileAdapter: FileAdapter) {
+function createTools(sandboxManager: SandboxManager) {
   return {
+    // Include compaction tools for reading compacted files
+    // These tools default to the workspace root, so you can use paths like:
+    // sandbox_cat({ file: "compact/session-id/tool-results/fetchEmails.json" })
+    ...sandboxManager.getCompactionTools(),
+
+    // Email-specific tool
     fetchEmails: tool({
       description: "Fetch recent emails for the current user (50 items)",
       inputSchema: z
@@ -225,8 +253,6 @@ function createTools(fileAdapter: FileAdapter) {
         };
       },
     }),
-    readFile: createReadFileTool({ storage: fileAdapter }),
-    grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
   };
 }
 
@@ -280,8 +306,9 @@ async function main() {
   // Select and validate environment
   const envConfig = await selectEnvironment();
 
-  // Use file adapter from environment config
+  // Use file adapter and sandbox manager from environment config
   const fileAdapter = envConfig.fileAdapter;
+  const sandboxManager = envConfig.sandboxManager;
 
   // Create messages file path (stored locally even for sandbox environments)
   const messagesFilePath = path.resolve(
@@ -290,8 +317,8 @@ async function main() {
     "conversation.json"
   );
 
-  // Create tools
-  const tools = createTools(fileAdapter);
+  // Create tools (includes exploration tools for reading compacted files)
+  const tools = createTools(sandboxManager);
 
   // Fetch OpenAI provider data for token/cost calculations
   const openaiProvider = await fetchModels("openai");
@@ -397,7 +424,8 @@ async function main() {
         model: "openai/gpt-4.1-mini",
         tools,
         stopWhen: stepCountIs(4),
-        system: "You are a helpful assistant that can help with emails.",
+        system:
+          "You are a helpful assistant that can help with emails. IMPORTANT: When you use tools and receive data, NEVER include the raw tool output, JSON, or technical data in your response to the user. Parse the data internally and respond naturally with only the relevant information the user asked for.",
         messages,
       });
 
@@ -405,9 +433,22 @@ async function main() {
       process.stdout.write("Assistant: ");
       let streamedText = "";
 
-      for await (const textPart of result.textStream) {
-        streamedText += textPart;
-        process.stdout.write(textPart);
+      // Use fullStream and only show text, filtering out all tool-related events
+      for await (const part of result.fullStream) {
+        switch (part.type) {
+          case "text-delta":
+            // Only output actual assistant text
+            streamedText += part.text;
+            process.stdout.write(part.text);
+            break;
+          case "tool-call":
+          case "tool-result":
+            // Skip all tool-related events - don't print anything
+            break;
+          // Ignore all other event types silently
+          default:
+            break;
+        }
       }
 
       // Add final newline

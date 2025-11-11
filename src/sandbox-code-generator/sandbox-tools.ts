@@ -14,13 +14,15 @@ export function createExplorationTools(
   return {
     sandbox_ls: tool({
       description:
-        "List directory contents in the sandbox. Shows files and directories with details.",
+        "List directory contents in the sandbox. Shows files and directories with details. Use exact paths from compaction messages.",
       inputSchema: z.object({
         path: z
           .string()
           .optional()
           .default(serversDir)
-          .describe("Directory path to list"),
+          .describe(
+            "Directory path to list. Use exact paths from compaction messages when exploring compacted files."
+          ),
         showHidden: z
           .boolean()
           .optional()
@@ -28,7 +30,6 @@ export function createExplorationTools(
           .describe("Show hidden files (starting with .)"),
       }),
       async execute({ path, showHidden }) {
-        console.log(`[sandbox_ls] ${path}`);
         const args = ["-la", path];
         if (!showHidden) {
           args.splice(1, 0, "-A"); // -A shows hidden but not . and ..
@@ -41,7 +42,6 @@ export function createExplorationTools(
 
         if (result.exitCode !== 0) {
           const stderr = await result.stderr();
-          console.log(`[sandbox_ls] ERROR: ${stderr}`);
           return `Error listing directory: ${stderr || "Unknown error"}`;
         }
 
@@ -51,16 +51,15 @@ export function createExplorationTools(
 
     sandbox_cat: tool({
       description:
-        "Read the contents of a file in the sandbox. Use this to view tool definitions and documentation. REQUIRED: You must provide the 'file' parameter with the full path to the file you want to read.",
+        "Read the contents of a file in the sandbox. Use the exact path provided in compaction messages. REQUIRED: You must provide the 'file' parameter with the path to the file.",
       inputSchema: z.object({
         file: z
           .string()
           .describe(
-            "Full path to the file to read (REQUIRED). Example: '/vercel/sandbox/servers/README.md'"
+            "Path to the file to read (REQUIRED). Use the exact path from the compaction message. Example: 'compact/session-id/tool-results/fetchEmails.json'"
           ),
       }),
       async execute({ file }) {
-        console.log(`[sandbox_cat] ${file}`);
         if (!file || file.trim() === "") {
           return "Error: 'file' parameter is required and cannot be empty. Please provide the full path to the file you want to read.";
         }
@@ -72,24 +71,47 @@ export function createExplorationTools(
 
         if (result.exitCode !== 0) {
           const stderr = await result.stderr();
-          console.log(`[sandbox_cat] ERROR: ${stderr}`);
           return `Error reading file: ${stderr || "File not found"}`;
         }
 
-        return (await result.stdout()) || "Empty file";
+        const content = (await result.stdout()) || "Empty file";
+
+        // If this looks like a compacted tool result JSON, parse it and return just the output
+        // This prevents the model from echoing large JSON structures
+        if (
+          content.includes('"metadata"') &&
+          content.includes('"toolName"') &&
+          content.includes('"output"')
+        ) {
+          try {
+            const parsed = JSON.parse(content);
+            if (parsed.output) {
+              // Return the actual tool output, not the metadata wrapper
+              return typeof parsed.output === "string"
+                ? parsed.output
+                : JSON.stringify(parsed.output, null, 2);
+            }
+          } catch (e) {
+            // If parsing fails, return content as-is
+          }
+        }
+
+        return content;
       },
     }),
 
     sandbox_grep: tool({
       description:
-        "Search for a pattern in files within the sandbox. Useful for finding specific functions or text. REQUIRED: You must provide the 'pattern' parameter.",
+        "Search for a pattern in files within the sandbox. For searching compacted files, provide the exact path from the compaction message. REQUIRED: You must provide the 'pattern' parameter.",
       inputSchema: z.object({
         pattern: z.string().describe("Pattern to search for (REQUIRED)"),
         path: z
           .string()
           .optional()
           .default(serversDir)
-          .describe("Directory or file to search in"),
+          .describe(
+            "Directory or file to search in. Use the exact path from compaction messages when searching compacted files."
+          ),
         recursive: z
           .boolean()
           .optional()
@@ -102,7 +124,6 @@ export function createExplorationTools(
           .describe("Case-insensitive search"),
       }),
       async execute({ pattern, path, recursive, caseInsensitive }) {
-        console.log(`[sandbox_grep] "${pattern}" in ${path}`);
         if (!pattern || pattern.trim() === "") {
           return "Error: 'pattern' parameter is required and cannot be empty. Please provide a search pattern.";
         }
@@ -126,7 +147,6 @@ export function createExplorationTools(
         // grep returns exit code 1 when no matches found, which is not an error
         if (result.exitCode !== 0 && result.exitCode !== 1) {
           const stderr = await result.stderr();
-          console.log(`[sandbox_grep] ERROR: ${stderr}`);
           return `Error searching: ${stderr || "Unknown error"}`;
         }
 
@@ -141,19 +161,22 @@ export function createExplorationTools(
 
     sandbox_find: tool({
       description:
-        "Find files by name pattern in the sandbox. Use wildcards like *.ts to find TypeScript files. REQUIRED: You must provide the 'pattern' parameter.",
+        "Find files by name pattern in the sandbox. Use wildcards like *.json to find files. REQUIRED: You must provide the 'pattern' parameter.",
       inputSchema: z.object({
         pattern: z
           .string()
-          .describe("File name pattern (e.g., '*.ts', 'index.*') (REQUIRED)"),
+          .describe(
+            "File name pattern (e.g., '*.json', 'fetchEmails.*') (REQUIRED)"
+          ),
         path: z
           .string()
           .optional()
           .default(serversDir)
-          .describe("Directory to search in"),
+          .describe(
+            "Directory to search in. Use exact paths from compaction messages."
+          ),
       }),
       async execute({ pattern, path }) {
-        console.log(`[sandbox_find] "${pattern}" in ${path}`);
         if (!pattern || pattern.trim() === "") {
           return "Error: 'pattern' parameter is required and cannot be empty. Please provide a file name pattern.";
         }
@@ -165,7 +188,6 @@ export function createExplorationTools(
 
         if (result.exitCode !== 0) {
           const stderr = await result.stderr();
-          console.log(`[sandbox_find] ERROR: ${stderr}`);
           return `Error finding files: ${stderr || "Unknown error"}`;
         }
 
@@ -205,7 +227,6 @@ export function createExecutionTool(
           ),
       }),
       async execute({ code, filename }) {
-        console.log(`[sandbox_exec] ${filename} (${code.length} chars)`);
         if (!code || code.trim() === "") {
           return "Error: 'code' parameter is required and cannot be empty. Please provide valid TypeScript code to execute.";
         }
@@ -243,19 +264,7 @@ export function createExecutionTool(
           let result;
           try {
             result = await Promise.race([executionPromise, timeoutPromise]);
-            const execTime = Date.now() - execStartTime;
-            console.log(
-              `[sandbox_exec] Completed in ${execTime}ms (exit code: ${result.exitCode})`
-            );
           } catch (raceError) {
-            const execTime = Date.now() - execStartTime;
-            console.error(
-              `[sandbox_exec] Timeout after ${execTime}ms: ${
-                raceError instanceof Error
-                  ? raceError.message
-                  : String(raceError)
-              }`
-            );
             throw raceError;
           }
 
@@ -265,7 +274,6 @@ export function createExecutionTool(
           const output = [stdout, stderr].filter(Boolean).join("\n");
 
           if (result.exitCode !== 0) {
-            console.log(`[sandbox_exec] FAILED (exit code ${result.exitCode})`);
             return `⚠️ Script execution failed (exit code ${result.exitCode})
 
 File: ${scriptPath}
@@ -282,12 +290,6 @@ File: ${scriptPath}
 Output:
 ${stdout || "(no output)"}${stderr ? `\n\nWarnings/Info:\n${stderr}` : ""}`;
         } catch (error) {
-          console.error(
-            `[sandbox_exec] ERROR: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-
           // Try to get stdout/stderr from the error if it's a CommandExitError
           let errorDetails = "";
           let capturedOutput = "";
@@ -340,7 +342,6 @@ This is a system-level error (not a code error). The script couldn't be executed
         content: z.string().describe("The full content to write to the file"),
       }),
       async execute({ filename, content }) {
-        console.log(`[sandbox_write_file] ${filename}`);
         if (!filename || filename.trim() === "") {
           return "Error: 'filename' parameter is required and cannot be empty.";
         }
@@ -372,11 +373,6 @@ This is a system-level error (not a code error). The script couldn't be executed
 
           return `✓ File written successfully: ${filePath}`;
         } catch (error) {
-          console.error(
-            `[sandbox_write_file] ERROR: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
           return `Error writing file: ${
             error instanceof Error ? error.message : String(error)
           }`;
@@ -400,7 +396,6 @@ This is a system-level error (not a code error). The script couldn't be executed
         new_text: z.string().describe("The text to replace old_text with"),
       }),
       async execute({ filename, old_text, new_text }) {
-        console.log(`[sandbox_edit_file] ${filename}`);
         if (!filename || filename.trim() === "") {
           return "Error: 'filename' parameter is required and cannot be empty.";
         }
@@ -462,11 +457,6 @@ This is a system-level error (not a code error). The script couldn't be executed
             100
           )}...\n\nWith:\n${new_text.substring(0, 100)}...`;
         } catch (error) {
-          console.error(
-            `[sandbox_edit_file] ERROR: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
           return `Error editing file: ${
             error instanceof Error ? error.message : String(error)
           }`;
@@ -480,7 +470,6 @@ This is a system-level error (not a code error). The script couldn't be executed
         filename: z.string().describe("Name of the file to delete"),
       }),
       async execute({ filename }) {
-        console.log(`[sandbox_delete_file] ${filename}`);
         if (!filename || filename.trim() === "") {
           return "Error: 'filename' parameter is required and cannot be empty.";
         }
@@ -495,11 +484,6 @@ This is a system-level error (not a code error). The script couldn't be executed
 
           return `✓ File deleted successfully: ${filePath}`;
         } catch (error) {
-          console.error(
-            `[sandbox_delete_file] ERROR: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
           return `Error deleting file: ${
             error instanceof Error ? error.message : String(error)
           }`;

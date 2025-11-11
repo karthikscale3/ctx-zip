@@ -206,58 +206,36 @@ export async function writeToolResultsToFileStrategy(
 
       // Reference-only behavior for tools that read/search storage
       // These tools can be re-run to get the same results, so we don't persist their output
-      const defaultFileReaderNames = ["readFile", "grepAndSearchFile"];
-      const configuredNames =
-        options.fileReaderTools && options.fileReaderTools.length > 0
-          ? options.fileReaderTools
-          : defaultFileReaderNames;
-      const fileReaderSet = new Set(configuredNames);
+      const fileReaderSet = new Set(options.fileReaderTools ?? []);
       if (part.toolName && fileReaderSet.has(part.toolName)) {
-        const output: any = part.output;
-        let fileName: string | undefined;
-        let key: string | undefined;
-        let storage: string | undefined;
+        // Find the corresponding tool call from the previous assistant message
+        let filePath: string | undefined;
 
-        // Try multiple access patterns to find the data
-        let outputData = output;
-
-        // If output has a value property, try that first
-        if (
-          output &&
-          typeof output === "object" &&
-          output.value !== undefined
-        ) {
-          outputData = output.value;
-        }
-
-        // If output has a text property (AI SDK sometimes uses this), try that
-        if (
-          outputData &&
-          typeof outputData === "object" &&
-          outputData.text !== undefined
-        ) {
-          outputData = outputData.text;
-        }
-
-        if (outputData && typeof outputData === "object") {
-          if (typeof outputData.fileName === "string") {
-            fileName = outputData.fileName;
-          }
-          if (typeof outputData.key === "string") {
-            key = outputData.key;
-          }
-          if (typeof outputData.storage === "string") {
-            storage = outputData.storage;
+        // Look back to find the assistant message with the matching tool call
+        for (let j = i - 1; j >= 0; j--) {
+          const assistantMsg: any = msgs[j];
+          if (
+            assistantMsg?.role === "assistant" &&
+            Array.isArray(assistantMsg.content)
+          ) {
+            const toolCall = assistantMsg.content.find(
+              (item: any) =>
+                item.type === "tool-call" && item.toolCallId === part.toolCallId
+            );
+            if (toolCall?.input) {
+              // Extract file path from input - try common parameter names
+              filePath =
+                toolCall.input.file ||
+                toolCall.input.path ||
+                toolCall.input.query;
+              break;
+            }
           }
         }
 
-        const display =
-          storage && key
-            ? `Read from file: ${formatStoragePathForDisplay(
-                storage,
-                key
-              )}. Key: ${key}`
-            : `Read from file: ${fileName ?? "<unknown>"}`;
+        const display = filePath
+          ? `Read from file: ${filePath}`
+          : `Read from storage (tool: ${part.toolName})`;
 
         part.output = {
           type: "text",
@@ -330,12 +308,13 @@ export async function writeToolResultsToFileStrategy(
       });
 
       const adapterUri = options.adapter.toString();
+
       part.output = {
         type: "text",
         value: `Written to file: ${formatStoragePathForDisplay(
           adapterUri,
           key
-        )}. Key: ${key}. Use the read/search tools to inspect its contents.`,
+        )}. To read it, use: sandbox_cat({ file: "${key}" })`,
       };
     }
   }

@@ -36,7 +36,7 @@ Context Rot
 - **Result**: Higher reliability, fast and ~80%+ token reduction for multi-tool workflows
 
 ### 2. **Output Compaction with Smart Retrieval**
-Automatically persists large tool outputs to the file system and replaces them with concise references. Agents can retrieve content on-demand using reader tools.
+Automatically persists large tool outputs to the sandbox filesystem and replaces them with concise references. Agents can retrieve content on-demand using the same sandbox exploration tools.
 
 **The Problem:**
 
@@ -46,9 +46,9 @@ Context Rot
 - Context windows exhaust, costs increase, performance degrades
 
 **The Solution:**
-- Tool outputs are automatically written to the file system (local filesystem or sandbox)
+- Tool outputs are automatically written to the sandbox filesystem
 - Replaced with short references in conversation
-- Agents retrieve data on-demand with `readFile` and `grepAndSearchFile`
+- Agents retrieve data on-demand with sandbox exploration tools (`sandbox_ls`, `sandbox_cat`, `sandbox_grep`, `sandbox_find`)
 - **Result**: ~60-90% token reduction for tool-heavy conversations
 
 ---
@@ -196,7 +196,8 @@ await manager.register({
 
 // Get tools
 manager.getAllTools()           // Exploration + execution tools
-manager.getExplorationTools()   // Only ls, cat, grep, find
+manager.getExplorationTools()   // ls, cat, grep, find (for MCP tools, defaults to servers dir)
+manager.getCompactionTools()    // ls, cat, grep, find (for compacted files, defaults to workspace root)
 manager.getExecutionTool()      // Only exec
 
 // Get paths
@@ -214,29 +215,22 @@ await manager.cleanup()
 
 ### Technique 2: Output Compaction with Smart Retrieval
 
-Automatically persist large tool outputs and provide retrieval tools:
+Automatically persist large tool outputs to sandbox storage and retrieve them on-demand:
 
 ```typescript
-import { generateText } from "ai";
-import { 
-  compact, 
-  createReadFileTool, 
-  createGrepAndSearchFileTool,
-  SandboxManager,
-} from "ctx-zip";
+import { generateText, tool } from "ai";
+import { z } from "zod";
+import { compact, SandboxManager } from "ctx-zip";
 
-// For local filesystem storage
-const fileAdapter = SandboxManager.createLocalFileAdapter({
-  baseDir: process.cwd(),
-  sessionId: "my-session",
-});
+// Create sandbox manager
+const manager = await SandboxManager.create();
+const fileAdapter = manager.getFileAdapter({ sessionId: "my-session" });
 
 const result = await generateText({
   model: "openai/gpt-4.1-mini",
   tools: {
-    // Reader tools for accessing compacted outputs
-    readFile: createReadFileTool({ storage: fileAdapter }),
-    grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
+    // Compaction tools for reading compacted files using exact paths
+    ...manager.getCompactionTools(),
     
     // Your data-generating tools
     fetchEmails: tool({
@@ -260,6 +254,8 @@ const result = await generateText({
     return { messages: compacted };
   },
 });
+
+await manager.cleanup();
 ```
 
 **How Compaction Works:**
@@ -276,8 +272,10 @@ const result = await generateText({
      Use the read/search tools to inspect its contents.
      ```
 4. **Agent can retrieve data:**
-   - `readFile(key)` - Read entire file
-   - `grepAndSearchFile(key, pattern)` - Search within file
+   - `sandbox_ls(path)` - List directory contents
+   - `sandbox_cat(file)` - Read entire file
+   - `sandbox_grep(pattern, path)` - Search within files
+   - `sandbox_find(pattern, path)` - Find files by name pattern
 
 **Storage Location:**
 
@@ -311,23 +309,19 @@ boundary: { type: "keep-first", count: 5 }
 boundary: { type: "keep-last", count: 20 }
 ```
 
-**Reader Tools:**
+**Sandbox Tools for Retrieval:**
 
-Both tools accept a `storage` option:
+Use compaction-specific tools that default to the workspace root:
 
 ```typescript
-// Option 1: Use FileAdapter instance (recommended)
-const fileAdapter = SandboxManager.createLocalFileAdapter({
-  baseDir: "/path/to/storage",
-  sessionId: "my-session",
-});
+const manager = await SandboxManager.create();
+const tools = manager.getCompactionTools();
+// Available: sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find
+// These default to workspace root for easy use with compaction paths
 
-createReadFileTool({ storage: fileAdapter })
-createGrepAndSearchFileTool({ storage: fileAdapter })
-
-// Option 2: Use URI string
-createReadFileTool({ storage: "file:///path/to/storage" })
-createGrepAndSearchFileTool({ storage: "file:///path/to/storage" })
+// The compaction message tells you exactly how to read the file:
+// "Written to file: sandbox://... To read it, use: sandbox_cat({ file: "compact/..." })"
+// Just copy the path from the message!
 ```
 
 **API Reference:**
@@ -339,24 +333,6 @@ const compacted = await compact(messages, {
   boundary?: Boundary,               // Which messages to compact
   sessionId?: string,                // Organize by session
   fileReaderTools?: string[],        // Tools that read (not persisted)
-});
-
-// Create reader tools
-const readFile = createReadFileTool({
-  storage?: FileAdapter | string,    // Defaults to cwd
-  description?: string,              // Custom description
-});
-
-const grepTool = createGrepAndSearchFileTool({
-  storage?: FileAdapter | string,    // Defaults to cwd
-  description?: string,              // Custom description
-});
-
-// Create local file adapter
-const adapter = SandboxManager.createLocalFileAdapter({
-  baseDir: string,                   // Absolute directory path
-  prefix?: string,                   // Subdirectory (default: "compact")
-  sessionId?: string,                // Session organization
 });
 ```
 
@@ -371,8 +347,6 @@ import { generateText } from "ai";
 import { 
   SandboxManager,
   compact,
-  createReadFileTool,
-  createGrepAndSearchFileTool,
   E2BSandboxProvider,
 } from "ctx-zip";
 
@@ -391,12 +365,9 @@ const fileAdapter = manager.getFileAdapter({
   sessionId: "combined-session",
 });
 
-// Step 3: Combine exploration + reader tools
-const tools = {
-  ...manager.getAllTools(),                              // Exploration + execution
-  readFile: createReadFileTool({ storage: fileAdapter }),
-  grepAndSearchFile: createGrepAndSearchFileTool({ storage: fileAdapter }),
-};
+// Step 3: Get all sandbox tools (exploration + execution)
+// These same tools are used for both tool discovery AND accessing compacted outputs
+const tools = manager.getAllTools();
 
 // Step 4: Use in agent loop with compaction
 const result = await generateText({
@@ -419,9 +390,9 @@ await manager.cleanup();
 
 **Benefits:**
 - MCP tools explored on-demand (no upfront schema loading)
-- Large search results compacted to storage
-- Agents retrieve only what they need
-- Maximum token efficiency
+- Large search results compacted to sandbox storage
+- Same exploration tools work for both tool discovery and compacted output retrieval
+- Maximum token efficiency and simplified API
 
 ---
 
@@ -555,20 +526,6 @@ type Boundary =
   | "all"
   | { type: "keep-first"; count: number }
   | { type: "keep-last"; count: number }
-```
-
-### Reader Tools
-
-```typescript
-function createReadFileTool(options?: {
-  storage?: FileAdapter | string,
-  description?: string,
-}): Tool
-
-function createGrepAndSearchFileTool(options?: {
-  storage?: FileAdapter | string,
-  description?: string,
-}): Tool
 ```
 
 ---

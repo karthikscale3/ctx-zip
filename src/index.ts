@@ -4,13 +4,6 @@
 export { compact } from "./tool-results-compactor/index";
 export type { Boundary, CompactOptions } from "./tool-results-compactor/index";
 
-// Tools
-export { createGrepAndSearchFileTool, createReadFileTool } from "./tools/index";
-export type {
-  GrepAndSearchFileToolOptions,
-  ReadFileToolOptions,
-} from "./tools/index";
-
 // Sandbox Code Generator
 export {
   E2BSandboxProvider,

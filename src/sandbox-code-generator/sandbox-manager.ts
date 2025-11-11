@@ -223,6 +223,15 @@ export class SandboxManager {
   }
 
   /**
+   * Get AI SDK tools for exploring compacted files in the sandbox.
+   * These tools default to the workspace root, making it easy to use
+   * the exact paths provided in compaction messages.
+   */
+  getCompactionTools() {
+    return createExplorationTools(this.sandboxProvider, this.workspacePath);
+  }
+
+  /**
    * Get AI SDK tool for executing code in the sandbox
    */
   getExecutionTool() {
