@@ -139,7 +139,7 @@ async function main() {
   const sessionId = `github-search-${new Date()
     .toISOString()
     .slice(0, 10)}-${Date.now().toString(36)}`;
-  const storageDir = path.resolve(process.cwd(), ".ctx-storage-e2b");
+  const storageDir = path.resolve(process.cwd(), ".sandbox-e2b");
   const messagesFilePath = path.resolve(
     storageDir,
     sessionId,

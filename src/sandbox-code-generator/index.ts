@@ -8,10 +8,13 @@ export {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
-export {
-  SandboxManager as SandboxExplorer,
-  SandboxManager,
-} from "./sandbox-manager.js";
-export type { SandboxProvider } from "./sandbox-provider.js";
+export { SandboxManager } from "./sandbox-manager.js";
+export type {
+  SandboxProvider,
+  SandboxProviderOptions,
+} from "./sandbox-provider.js";
 export type { ToolCodeGenerationResult } from "./tool-code-writer.js";
-export { VercelSandboxProvider } from "./vercel-sandbox-provider.js";
+export {
+  VercelSandboxProvider,
+  type VercelSandboxOptions,
+} from "./vercel-sandbox-provider.js";

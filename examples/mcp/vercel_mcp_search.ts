@@ -136,7 +136,7 @@ async function main() {
   const sessionId = `github-search-${new Date()
     .toISOString()
     .slice(0, 10)}-${Date.now().toString(36)}`;
-  const storageDir = path.resolve(process.cwd(), ".ctx-storage-vercel");
+  const storageDir = path.resolve(process.cwd(), ".sandbox-vercel");
   const messagesFilePath = path.resolve(
     storageDir,
     sessionId,

@@ -136,7 +136,7 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
 
   if (environment === "local") {
     // Local file system storage
-    storageBaseDir = path.resolve(process.cwd(), ".ctx-storage");
+    storageBaseDir = path.resolve(process.cwd(), ".sandbox-local");
     fileAdapter = new FileAdapterClass({
       baseDir: storageBaseDir,
       sessionId,

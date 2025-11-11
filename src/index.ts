@@ -39,7 +39,6 @@ export type {
 export {
   E2BSandboxProvider,
   LocalSandboxProvider,
-  SandboxExplorer,
   SandboxManager,
   VercelSandboxProvider,
 } from "./sandbox-code-generator/index";
@@ -47,5 +46,7 @@ export type {
   E2BSandboxOptions,
   LocalSandboxOptions,
   SandboxProvider,
+  SandboxProviderOptions,
   ToolCodeGenerationResult,
+  VercelSandboxOptions,
 } from "./sandbox-code-generator/index";
