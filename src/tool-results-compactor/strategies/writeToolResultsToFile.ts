@@ -204,10 +204,9 @@ export async function writeToolResultsToFileStrategy(
     for (const part of msg.content) {
       if (!part || part.type !== "tool-result" || !part.output) continue;
 
-      // Reference-only behavior for tools that read from storage
-      // Note: Only readFile is included. grepAndSearchFile returns computed results
-      // (matches) that cannot be recreated, so we persist them instead.
-      const defaultFileReaderNames = ["readFile"];
+      // Reference-only behavior for tools that read/search storage
+      // These tools can be re-run to get the same results, so we don't persist their output
+      const defaultFileReaderNames = ["readFile", "grepAndSearchFile"];
       const configuredNames =
         options.fileReaderTools && options.fileReaderTools.length > 0
           ? options.fileReaderTools
