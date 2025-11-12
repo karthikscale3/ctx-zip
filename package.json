@@ -1,6 +1,6 @@
 {
   "name": "ctx-zip",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Keep your AI agent context small and cheap by managing tool bloat and large outputs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
