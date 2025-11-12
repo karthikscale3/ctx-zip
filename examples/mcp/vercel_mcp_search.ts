@@ -264,17 +264,19 @@ Available sandbox tools:
 - sandbox_grep: Search for patterns in files
 - sandbox_exec: Execute TypeScript code in the sandbox
 - sandbox_write_file: Write file to the sandbox
+- sandbox_lint: Lint a TypeScript file in the sandbox
 - sandbox_edit_file: Edit file in the sandbox
 - sandbox_delete_file: Delete file from the sandbox
 
 When searching GitHub:
 1. First use sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find to read the tool definitions to understand available search capabilities
 2. Then write a script to perform the task using sandbox_write_file, sandbox_edit_file, sandbox_delete_file
-3. Then execute the script
-4. If the script is not working, edit it and try again
-5. Optionally delete the script and re write it if needed
-6. Do not write new files unless absolutely necessary
-7. Always show actual results, not just confirmation of execution
+3. Then lint the script using sandbox_lint to check for errors. If there are errors, fix them and try again.
+4. Then execute the script
+5. If the script is not working, edit it and try again from step 2.
+6. Optionally delete the script and re write it if needed from step 2.
+7. Do not write new files unless absolutely necessary from step 2.
+8. Always show actual results, not just confirmation of execution from step 4.
 
 Be conversational and helpful. Guide users through GitHub searches and code exploration.`,
         messages,

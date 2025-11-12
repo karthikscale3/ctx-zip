@@ -205,12 +205,12 @@ export function createExecutionTool(
 ) {
   return {
     sandbox_exec: tool({
-      description: `Execute TypeScript code in the sandbox using tsx. Code is saved in ${userCodeDir} and can import MCP tools using: import { toolName } from '../mcp/server-name/index.ts'. REQUIRED: You must provide the 'code' parameter with valid TypeScript code to execute.`,
+      description: `Execute TypeScript code in the sandbox using tsx. Code is saved in ${userCodeDir}. IMPORTS: From user-code, use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, and '../compact/' for compacted results. REQUIRED: You must provide the 'code' parameter with valid TypeScript code to execute.`,
       inputSchema: z.object({
         code: z
           .string()
           .describe(
-            "TypeScript code to execute (REQUIRED). IMPORTANT: Use relative imports with .ts extension like '../mcp/grep-app/index.ts' to import MCP tools."
+            "TypeScript code to execute (REQUIRED). IMPORTS: Use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, '../compact/' for compacted results."
           ),
         filename: z
           .string()
@@ -326,14 +326,18 @@ This is a system-level error (not a code error). The script couldn't be executed
     }),
 
     sandbox_write_file: tool({
-      description: `Write or overwrite a file in the user code directory (${userCodeDir}). Creates the file if it doesn't exist. SECURITY: Only works in user-code directory.`,
+      description: `Write or overwrite a file in the user code directory (${userCodeDir}). Creates the file if it doesn't exist. SECURITY: Only works in user-code directory. IMPORTS: From user-code, use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, and '../compact/' for compacted results.`,
       inputSchema: z.object({
         filename: z
           .string()
           .describe(
             "Name of the file to write (e.g., 'helper.ts', 'utils.ts'). Will be created in user-code directory."
           ),
-        content: z.string().describe("The full content to write to the file"),
+        content: z
+          .string()
+          .describe(
+            "The full content to write to the file. When importing: use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, '../compact/' for compacted results."
+          ),
       }),
       async execute({ filename, content }) {
         if (!filename || filename.trim() === "") {
@@ -375,7 +379,7 @@ This is a system-level error (not a code error). The script couldn't be executed
     }),
 
     sandbox_edit_file: tool({
-      description: `Edit a file in the user code directory by replacing text. Replaces 'old_text' with 'new_text'. SECURITY: Only works on files in user-code directory (${userCodeDir}).`,
+      description: `Edit a file in the user code directory by replacing text. Replaces 'old_text' with 'new_text'. SECURITY: Only works on files in user-code directory (${userCodeDir}). IMPORTS: From user-code, use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, and '../compact/' for compacted results.`,
       inputSchema: z.object({
         filename: z
           .string()
@@ -387,7 +391,11 @@ This is a system-level error (not a code error). The script couldn't be executed
           .describe(
             "The exact text to find and replace. Must match exactly (including whitespace)."
           ),
-        new_text: z.string().describe("The text to replace old_text with"),
+        new_text: z
+          .string()
+          .describe(
+            "The text to replace old_text with. When importing: use '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, '../compact/' for compacted results."
+          ),
       }),
       async execute({ filename, old_text, new_text }) {
         if (!filename || filename.trim() === "") {
@@ -459,9 +467,11 @@ This is a system-level error (not a code error). The script couldn't be executed
     }),
 
     sandbox_delete_file: tool({
-      description: `Delete a file in the user code directory (${userCodeDir}). SECURITY: Only works in user-code directory.`,
+      description: `Delete a file in the user code directory (${userCodeDir}). SECURITY: Only works in user-code directory. NOTE: From user-code, relative imports are '../mcp/server-name/' for MCP tools, '../local-tools/' for local tools, and '../compact/' for compacted results.`,
       inputSchema: z.object({
-        filename: z.string().describe("Name of the file to delete"),
+        filename: z
+          .string()
+          .describe("Name of the file to delete in user-code directory"),
       }),
       async execute({ filename }) {
         if (!filename || filename.trim() === "") {
@@ -479,6 +489,70 @@ This is a system-level error (not a code error). The script couldn't be executed
           return `✓ File deleted successfully: ${filePath}`;
         } catch (error) {
           return `Error deleting file: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+        }
+      },
+    }),
+
+    sandbox_lint: tool({
+      description: `Lint a TypeScript file in ${userCodeDir} and check for errors without executing it. Use this after writing code with sandbox_write_file or sandbox_exec to validate the code. Uses TypeScript compiler to check for type errors, syntax errors, and other issues.`,
+      inputSchema: z.object({
+        filename: z
+          .string()
+          .describe(
+            `Filename in ${userCodeDir} to lint (e.g., 'script.ts', 'helper.ts')`
+          ),
+      }),
+      async execute({ filename }) {
+        if (!filename || filename.trim() === "") {
+          return "Error: 'filename' parameter is required and cannot be empty.";
+        }
+
+        try {
+          // Security: Block path traversal
+          if (filename.includes("..") || filename.includes("/")) {
+            return `Error: Invalid filename '${filename}'. Only simple filenames in ${userCodeDir} are allowed.`;
+          }
+
+          const filePath = `${userCodeDir}/${filename}`;
+
+          // Check if file exists
+          const checkResult = await sandboxProvider.runCommand({
+            cmd: "test",
+            args: ["-f", filePath],
+          });
+
+          if (checkResult.exitCode !== 0) {
+            return `Error: File not found: ${filePath}`;
+          }
+
+          // Run TypeScript compiler in no-emit mode to check for errors
+          const result = await sandboxProvider.runCommand({
+            cmd: "npx",
+            args: [
+              "tsc",
+              "--noEmit",
+              "--pretty",
+              "false",
+              "--skipLibCheck",
+              filePath,
+            ],
+          });
+
+          const stdout = await result.stdout();
+          const stderr = await result.stderr();
+          const output = [stdout, stderr].filter(Boolean).join("\n");
+
+          if (result.exitCode === 0) {
+            return `✓ No TypeScript errors found\n\nFile: ${filePath}\n\nThe code passes TypeScript compilation checks.`;
+          }
+
+          return `⚠️ TypeScript errors found\n\nFile: ${filePath}\n\n${
+            output || "(no error details available)"
+          }\n\n💡 Fix these errors before executing the code.`;
+        } catch (error) {
+          return `Error during linting: ${
             error instanceof Error ? error.message : String(error)
           }`;
         }

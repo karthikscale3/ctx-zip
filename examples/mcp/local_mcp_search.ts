@@ -130,7 +130,7 @@ async function main() {
   // Create local sandbox provider
   console.log("🔧 Creating local sandbox...");
   const sandboxProvider = await LocalSandboxProvider.create({
-    sandboxDir: "./.sandbox",
+    sandboxDir: "./.sandbox-local",
     cleanOnCreate: false, // Don't clean on create to preserve files between sessions
   });
 
@@ -314,20 +314,22 @@ Available sandbox tools:
 - sandbox_grep: Search for patterns in files
 - sandbox_exec: Execute TypeScript code in the sandbox
 - sandbox_write_file: Write file to the sandbox
+- sandbox_lint: Lint a TypeScript file in the sandbox
 - sandbox_edit_file: Edit file in the sandbox
 - sandbox_delete_file: Delete file from the sandbox
 
 Available standard tools:
 - weather: Get weather information for any location
 
-When searching GitHub:
+When searching GitHub or getting weather information:
 1. First use sandbox_ls, sandbox_cat, sandbox_grep, sandbox_find to read the tool definitions to understand available search capabilities
 2. Then write a script to perform the task using sandbox_write_file, sandbox_edit_file, sandbox_delete_file
-3. Then execute the script
-4. If the script is not working, edit it and try again
-5. Optionally delete the script and re write it if needed
-6. Do not write new files unless absolutely necessary
-7. Always show actual results, not just confirmation of execution
+3. Then lint the script using sandbox_lint to check for errors. If there are errors, fix them and try again.
+4. Then execute the script
+5. If the script is not working, edit it and try again from step 2.
+6. Optionally delete the script and re write it if needed from step 2.
+7. Do not write new files unless absolutely necessary from step 2.
+8. Always show actual results, not just confirmation of execution from step 4.
 
 The sandbox files are persisted locally at: ${sandboxProvider.getAbsolutePath()}
 
