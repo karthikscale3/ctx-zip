@@ -104,7 +104,7 @@ export function createExplorationTools(
         path: z
           .string()
           .optional()
-          .default(serversDir)
+          .default(baseDir)
           .describe("Directory or file to search in"),
         recursive: z
           .boolean()
@@ -165,7 +165,7 @@ export function createExplorationTools(
         path: z
           .string()
           .optional()
-          .default(serversDir)
+          .default(baseDir)
           .describe(
             "Directory to search in. Use exact paths from compaction messages."
           ),
