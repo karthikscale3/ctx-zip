@@ -8,6 +8,7 @@ export type { Boundary, CompactOptions } from "./tool-results-compactor/index";
 export {
   E2BSandboxProvider,
   LocalSandboxProvider,
+  SANDBOX_SYSTEM_PROMPT,
   SandboxManager,
   VercelSandboxProvider,
 } from "./sandbox-code-generator/index";

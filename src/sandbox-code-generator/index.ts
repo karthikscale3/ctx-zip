@@ -15,6 +15,7 @@ export {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
+export { SANDBOX_SYSTEM_PROMPT } from "./prompts.js";
 export { SandboxManager } from "./sandbox-manager.js";
 export type {
   SandboxProvider,
