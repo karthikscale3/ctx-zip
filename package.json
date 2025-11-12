@@ -1,7 +1,7 @@
 {
   "name": "ctx-zip",
-  "version": "0.0.9",
-  "description": "A tool for context compression of tool call results",
+  "version": "1.0.0",
+  "description": "Keep your AI agent context small and cheap by managing tool bloat and large outputs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
