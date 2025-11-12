@@ -115,7 +115,7 @@ The `register()` call creates a directory structure in the sandbox:
 
 ```
 /workspace/
-├── servers/              # MCP tool implementations
+├── mcp/              # MCP tool implementations
 │   ├── grep-app/
 │   │   ├── search.ts
 │   │   ├── index.ts
@@ -299,13 +299,13 @@ Control which messages get compacted:
 
 ```typescript
 
-// 2. All messages - re-compact entire conversation
+// 1. All messages - re-compact entire conversation
 boundary: "all"
 
-// 3. Keep first N - preserve system prompt, compact rest
+// 2. Keep first N - preserve system prompt, compact rest
 boundary: { type: "keep-first", count: 5 }
 
-// 4. Keep last N - preserve recent context, compact older
+// 3. Keep last N - preserve recent context, compact older
 boundary: { type: "keep-last", count: 20 }
 ```
 
