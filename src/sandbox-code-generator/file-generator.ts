@@ -512,6 +512,161 @@ See individual tool files for detailed parameter descriptions and usage examples
 }
 
 /**
+ * Generate README for user-code directory
+ */
+function generateUserCodeREADME(): string {
+  return `# User Code Directory
+
+This is your workspace for writing TypeScript code that uses MCP tools and local tools.
+
+## 📁 Available Resources
+
+Before writing code here, **explore the available tools** if you haven't already:
+
+### 1. MCP Tools (../mcp/)
+MCP (Model Context Protocol) tools provide access to external services and APIs.
+
+**Explore first:**
+\`\`\`bash
+# List available MCP tool servers
+ls ../mcp/
+
+# Read the MCP tools README for full details
+cat ../mcp/README.md
+
+# List tools in a specific server (e.g., 'github')
+ls ../mcp/github/
+\`\`\`
+
+**Then import and use:**
+\`\`\`typescript
+import { toolName } from '../mcp/server-name/index.ts';
+import { closeAllConnections } from '../mcp/_client.ts';
+
+async function main() {
+  try {
+    const result = await toolName({ /* your args */ });
+    console.log('Result:', JSON.stringify(result, null, 2));
+  } finally {
+    // CRITICAL: Always close connections to exit cleanly
+    await closeAllConnections();
+  }
+}
+
+main().catch(console.error);
+\`\`\`
+
+### 2. Local Tools (../local-tools/)
+Local tools are custom utilities available in the sandbox.
+
+**Explore first:**
+\`\`\`bash
+# List available local tools
+ls ../local-tools/
+
+# Read the local tools README (if available)
+cat ../local-tools/README.md
+
+# View a specific tool
+cat ../local-tools/toolName.ts
+\`\`\`
+
+**Then import and use:**
+\`\`\`typescript
+import { functionName } from '../local-tools/toolName.ts';
+
+const result = functionName({ /* your args */ });
+console.log(result);
+\`\`\`
+
+### 3. Compacted Results (../compact/)
+If tool results have been compacted to save context, they're stored here.
+
+**Explore:**
+\`\`\`bash
+# List compacted files
+ls ../compact/
+
+# Read a compacted result
+cat ../compact/toolName_timestamp.json
+\`\`\`
+
+**Then import and use:**
+\`\`\`typescript
+import compactedData from '../compact/toolName_timestamp.json' assert { type: 'json' };
+console.log(compactedData);
+\`\`\`
+
+## ⚠️ Important Guidelines
+
+1. **Explore Before Coding**: Always use \`ls\` and \`cat\` to explore the \`../mcp/\`, \`../local-tools/\`, and \`../compact/\` directories before writing code
+2. **Use Relative Imports**: Import using \`../\` prefix (e.g., \`'../mcp/server/tool.ts'\`)
+3. **Log Responses**: Always log MCP tool responses to understand their structure
+4. **Close Connections**: For MCP tools, always call \`closeAllConnections()\` in a \`finally\` block
+5. **Check Types**: Read the TypeScript interfaces in tool files for parameter and return types
+
+## 📝 Example Script Pattern
+
+\`\`\`typescript
+// Import tools
+import { mcpTool } from '../mcp/server-name/index.ts';
+import { localTool } from '../local-tools/toolName.ts';
+import { closeAllConnections } from '../mcp/_client.ts';
+
+async function main() {
+  try {
+    // Use MCP tool
+    console.log('Calling MCP tool...');
+    const mcpResult = await mcpTool({ query: 'example' });
+    console.log('MCP Result:', JSON.stringify(mcpResult, null, 2));
+    
+    // Use local tool
+    console.log('\\nCalling local tool...');
+    const localResult = localTool({ input: 'data' });
+    console.log('Local Result:', localResult);
+    
+    // Process results
+    // ... your logic here ...
+    
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  } finally {
+    // CRITICAL: Close MCP connections
+    await closeAllConnections();
+  }
+}
+
+// Run the script
+main().catch(console.error);
+\`\`\`
+
+## 🚀 Getting Started
+
+1. **First, explore available tools:**
+   \`\`\`bash
+   ls ../mcp/
+   cat ../mcp/README.md
+   ls ../local-tools/
+   \`\`\`
+
+2. **Then create your script** (e.g., \`script.ts\`)
+
+3. **Run it** using the sandbox execution tool
+
+## 💡 Tips
+
+- Read README files in \`../mcp/\` and \`../local-tools/\` for detailed documentation
+- Check individual tool files for JSDoc comments and examples
+- Use \`console.log()\` liberally to debug
+- MCP tools return objects/strings (not arrays!) - always inspect the response first
+- Local tools are synchronous, MCP tools are async (require \`await\`)
+
+Happy coding! 🎉
+`;
+}
+
+/**
  * Write all files to the sandbox
  */
 export async function writeFilesToSandbox(
@@ -560,4 +715,20 @@ export async function writeFilesToSandbox(
 
   // Write all files at once
   await sandboxProvider.writeFiles(filesToWrite);
+}
+
+/**
+ * Write user-code README to the sandbox
+ */
+export async function writeUserCodeREADME(
+  sandboxProvider: SandboxProvider,
+  userCodeDir: string
+): Promise<void> {
+  const readmeCode = generateUserCodeREADME();
+  await sandboxProvider.writeFiles([
+    {
+      path: `${userCodeDir}/README.md`,
+      content: Buffer.from(readmeCode, "utf-8"),
+    },
+  ]);
 }

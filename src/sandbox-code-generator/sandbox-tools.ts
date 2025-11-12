@@ -14,14 +14,14 @@ export function createExplorationTools(
   return {
     sandbox_ls: tool({
       description:
-        "List directory contents in the sandbox. Shows files and directories with details. Use exact paths from compaction messages.",
+        "List directory contents in the sandbox. Shows files and directories with details. Can explore any directory by providing a path (relative or absolute). Defaults to base directory if no path provided.",
       inputSchema: z.object({
         path: z
           .string()
           .optional()
           .default(baseDir)
           .describe(
-            "Directory path to list. Use exact paths from compaction messages when exploring compacted files."
+            "Directory path to list (e.g., 'mcp/github', '/full/path/to/dir', './subdirectory'). Defaults to base directory. Can explore any subdirectory within the sandbox."
           ),
         showHidden: z
           .boolean()
@@ -98,14 +98,16 @@ export function createExplorationTools(
 
     sandbox_grep: tool({
       description:
-        "Search for a pattern in files within the sandbox. REQUIRED: You must provide the 'pattern' parameter.",
+        "Search for a pattern in files within the sandbox. Can search in any directory or file. REQUIRED: You must provide the 'pattern' parameter.",
       inputSchema: z.object({
         pattern: z.string().describe("Pattern to search for (REQUIRED)"),
         path: z
           .string()
           .optional()
           .default(baseDir)
-          .describe("Directory or file to search in"),
+          .describe(
+            "Directory or file to search in (e.g., 'mcp', 'user-code/script.ts', or full path). Defaults to base directory."
+          ),
         recursive: z
           .boolean()
           .optional()
@@ -155,19 +157,19 @@ export function createExplorationTools(
 
     sandbox_find: tool({
       description:
-        "Find files by name pattern in the sandbox. Use wildcards like *.json to find files. REQUIRED: You must provide the 'pattern' parameter.",
+        "Find files by name pattern in the sandbox. Can search in any directory. Use wildcards like *.json to find files. REQUIRED: You must provide the 'pattern' parameter.",
       inputSchema: z.object({
         pattern: z
           .string()
           .describe(
-            "File name pattern (e.g., '*.json', 'fetchEmails.*') (REQUIRED)"
+            "File name pattern (e.g., '*.json', 'fetchEmails.*', '*.ts') (REQUIRED)"
           ),
         path: z
           .string()
           .optional()
           .default(baseDir)
           .describe(
-            "Directory to search in. Use exact paths from compaction messages."
+            "Directory to search in (e.g., 'mcp', 'local-tools', or full path). Defaults to base directory. Searches recursively in subdirectories."
           ),
       }),
       async execute({ pattern, path }) {

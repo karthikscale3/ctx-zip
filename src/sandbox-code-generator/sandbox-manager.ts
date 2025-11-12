@@ -7,7 +7,7 @@ import {
   type FileAdapter,
   type LocalFileAdapterOptions,
 } from "./file-adapter.js";
-import { writeFilesToSandbox } from "./file-generator.js";
+import { writeFilesToSandbox, writeUserCodeREADME } from "./file-generator.js";
 import {
   LocalSandboxProvider,
   type LocalSandboxOptions,
@@ -119,6 +119,9 @@ export class SandboxManager {
         throw new Error(`Failed to create directory ${dir}: ${stderr}`);
       }
     }
+
+    // Generate README for user-code directory with instructions
+    await writeUserCodeREADME(this.sandboxProvider, this.userCodeDir);
   }
 
   /**

@@ -1,7 +1,6 @@
-import { execFile, spawn } from "child_process";
+import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { promisify } from "util";
 import type {
   CommandResult,
   SandboxCommand,
@@ -9,8 +8,6 @@ import type {
   SandboxProvider,
   SandboxProviderOptions,
 } from "./sandbox-provider.js";
-
-const execFileAsync = promisify(execFile);
 
 /**
  * Options for creating a local sandbox
