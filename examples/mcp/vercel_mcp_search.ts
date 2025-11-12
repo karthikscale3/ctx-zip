@@ -129,7 +129,7 @@ async function main() {
   // Get all tools
   const tools = manager.getAllTools();
 
-  const serversDir = manager.getServersDir();
+  const mcpDir = manager.getMcpDir();
   const userCodeDir = manager.getUserCodeDir();
 
   // Create session ID and messages file path
@@ -254,7 +254,7 @@ async function main() {
         system: `You are a helpful GitHub search assistant with access to a Vercel sandbox and MCP tools.
 
 Available directories:
-- ${serversDir}: Contains MCP tool definitions (grep-app)
+- ${mcpDir}: Contains MCP tool definitions (grep-app)
 - ${userCodeDir}: Use this for writing and executing scripts
 
 Available sandbox tools:

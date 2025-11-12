@@ -459,7 +459,7 @@ All tools can be imported from their server directory:
 1. **Check the type definitions**: Each tool file contains TypeScript interfaces with full JSDoc
 2. **Look at examples**: Each function has an @example in its JSDoc
 3. **Import from index**: Use \`import { toolName } from './server-name/index.ts'\`
-4. **Relative imports**: When writing scripts in ../user-code/, use \`'../servers/...'\`
+4. **Relative imports**: When writing scripts in ../user-code/, use \`'../mcp/...'\`
 5. **⚠️ IMPORTANT - Response Handling**: 
    - **Always log the response first** to understand its structure!
    - MCP tools return **objects or strings, NOT arrays**
@@ -468,15 +468,15 @@ All tools can be imported from their server directory:
    - Parse the actual response structure (often \`{ type: "text", text: "..." }\` or plain strings)
 6. **🔄 CRITICAL - Clean Exit**: 
    - **Always call \`closeAllConnections()\` before exiting** to close MCP connections
-   - Import from \`_client.ts\`: \`import { closeAllConnections } from './servers/_client.ts';\`
+   - Import from \`_client.ts\`: \`import { closeAllConnections } from './mcp/_client.ts';\`
    - Call in \`finally\` block: \`finally { await closeAllConnections(); }\`
    - **Without this, your script may hang for 60+ seconds!**
 
 ## 📖 Recommended Script Pattern
 
 \`\`\`typescript
-import { toolName } from './servers/server-name/index.ts';
-import { closeAllConnections } from './servers/_client.ts';
+import { toolName } from './mcp/server-name/index.ts';
+import { closeAllConnections } from './mcp/_client.ts';
 
 async function main() {
   try {

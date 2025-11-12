@@ -167,7 +167,7 @@ async function main() {
     ...sandboxTools,
   };
 
-  const serversDir = manager.getServersDir();
+  const mcpDir = manager.getMcpDir();
   const localToolsDir = manager.getLocalToolsDir();
   const userCodeDir = manager.getUserCodeDir();
 
@@ -303,7 +303,7 @@ async function main() {
         system: `You are a helpful GitHub search assistant with access to a local sandbox, MCP tools, and standard tools.
 
 Available directories:
-- ${serversDir}: Contains MCP tool definitions (grep-app)
+- ${mcpDir}: Contains MCP tool definitions (grep-app)
 - ${localToolsDir}: Contains standard tool definitions (weather)
 - ${userCodeDir}: Use this for writing and executing scripts
 

@@ -146,20 +146,20 @@ Once tools are registered, agents can explore them:
 
 ```typescript
 // Agent explores available tools
-await sandbox_ls("/workspace/servers")
+await sandbox_ls("/workspace/mcp")
 // → ["grep-app/", "linear/", "_client.ts"]
 
 await sandbox_ls("/workspace/local-tools")
 // → ["weather.ts", "index.ts"]
 
 // Agent inspects a tool
-await sandbox_cat("/workspace/servers/grep-app/search.ts")
+await sandbox_cat("/workspace/mcp/grep-app/search.ts")
 // → Full TypeScript source with types and documentation
 
 // Agent writes code to use multiple tools together
 await sandbox_exec(`
-  import { search } from './servers/grep-app/index.ts';
-  import { createIssue } from './servers/linear/index.ts';
+  import { search } from './mcp/grep-app/index.ts';
+  import { createIssue } from './mcp/linear/index.ts';
   import { weather } from './local-tools/index.ts';
   
   const results = await search({ query: 'authentication bug' });
@@ -196,12 +196,12 @@ await manager.register({
 
 // Get tools
 manager.getAllTools()           // Exploration + execution tools
-manager.getExplorationTools()   // ls, cat, grep, find (for MCP tools, defaults to servers dir)
+manager.getExplorationTools()   // ls, cat, grep, find (for MCP tools, defaults to mcp dir)
 manager.getCompactionTools()    // ls, cat, grep, find (for compacted files, defaults to workspace root)
 manager.getExecutionTool()      // Only exec
 
 // Get paths
-manager.getServersDir()         // /workspace/servers
+manager.getMcpDir()         // /workspace/mcp
 manager.getLocalToolsDir()      // /workspace/local-tools
 manager.getUserCodeDir()        // /workspace/user-code
 manager.getCompactDir()         // /workspace/compact
@@ -487,7 +487,7 @@ class SandboxManager {
   getExecutionTool(): Record<string, Tool>
 
   // Get paths
-  getServersDir(): string
+  getMcpDir(): string
   getLocalToolsDir(): string
   getUserCodeDir(): string
   getCompactDir(): string

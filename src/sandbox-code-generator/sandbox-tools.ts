@@ -9,7 +9,7 @@ import type { SandboxProvider } from "./sandbox-provider.js";
  */
 export function createExplorationTools(
   sandboxProvider: SandboxProvider,
-  serversDir: string
+  baseDir: string
 ) {
   return {
     sandbox_ls: tool({
@@ -19,7 +19,7 @@ export function createExplorationTools(
         path: z
           .string()
           .optional()
-          .default(serversDir)
+          .default(baseDir)
           .describe(
             "Directory path to list. Use exact paths from compaction messages when exploring compacted files."
           ),
@@ -51,13 +51,9 @@ export function createExplorationTools(
 
     sandbox_cat: tool({
       description:
-        "Read the contents of a file in the sandbox. Use the exact path provided in compaction messages. REQUIRED: You must provide the 'file' parameter with the path to the file.",
+        "Read the contents of a file in the sandbox. REQUIRED: You must provide the 'file' parameter with the path to the file.",
       inputSchema: z.object({
-        file: z
-          .string()
-          .describe(
-            "Path to the file to read (REQUIRED). Use the exact path from the compaction message. Example: 'compact/session-id/tool-results/fetchEmails.json'"
-          ),
+        file: z.string().describe("Path to the file to read (REQUIRED)"),
       }),
       async execute({ file }) {
         if (!file || file.trim() === "") {
@@ -102,16 +98,14 @@ export function createExplorationTools(
 
     sandbox_grep: tool({
       description:
-        "Search for a pattern in files within the sandbox. For searching compacted files, provide the exact path from the compaction message. REQUIRED: You must provide the 'pattern' parameter.",
+        "Search for a pattern in files within the sandbox. REQUIRED: You must provide the 'pattern' parameter.",
       inputSchema: z.object({
         pattern: z.string().describe("Pattern to search for (REQUIRED)"),
         path: z
           .string()
           .optional()
           .default(serversDir)
-          .describe(
-            "Directory or file to search in. Use the exact path from compaction messages when searching compacted files."
-          ),
+          .describe("Directory or file to search in"),
         recursive: z
           .boolean()
           .optional()
@@ -211,12 +205,12 @@ export function createExecutionTool(
 ) {
   return {
     sandbox_exec: tool({
-      description: `Execute TypeScript code in the sandbox using tsx. Code is saved in ${userCodeDir} and can import MCP tools using: import { toolName } from '../servers/server-name/index.ts'. REQUIRED: You must provide the 'code' parameter with valid TypeScript code to execute.`,
+      description: `Execute TypeScript code in the sandbox using tsx. Code is saved in ${userCodeDir} and can import MCP tools using: import { toolName } from '../mcp/server-name/index.ts'. REQUIRED: You must provide the 'code' parameter with valid TypeScript code to execute.`,
       inputSchema: z.object({
         code: z
           .string()
           .describe(
-            "TypeScript code to execute (REQUIRED). IMPORTANT: Use relative imports with .ts extension like '../servers/grep-app/index.ts' to import MCP tools."
+            "TypeScript code to execute (REQUIRED). IMPORTANT: Use relative imports with .ts extension like '../mcp/grep-app/index.ts' to import MCP tools."
           ),
         filename: z
           .string()

@@ -34,7 +34,7 @@ export class SandboxManager {
   private readonly workspacePath: string;
   private readonly explorationRoot: string;
 
-  private readonly serversDir: string;
+  private readonly mcpDir: string;
   private readonly localToolsDir: string;
   private readonly userCodeDir: string;
   private readonly compactDir: string;
@@ -48,7 +48,7 @@ export class SandboxManager {
     this.explorationRoot = this.workspacePath;
 
     // Define the four standard directories
-    this.serversDir = `${this.workspacePath}/servers`;
+    this.mcpDir = `${this.workspacePath}/mcp`;
     this.localToolsDir = `${this.workspacePath}/local-tools`;
     this.userCodeDir = `${this.workspacePath}/user-code`;
     this.compactDir = `${this.workspacePath}/compact`;
@@ -102,7 +102,7 @@ export class SandboxManager {
    */
   private async createDirectoryStructure(): Promise<void> {
     const dirs = [
-      this.serversDir,
+      this.mcpDir,
       this.localToolsDir,
       this.userCodeDir,
       this.compactDir,
@@ -187,10 +187,10 @@ export class SandboxManager {
           this.sandboxProvider,
           this.serverToolsMap,
           servers,
-          this.serversDir
+          this.mcpDir
         );
 
-        console.log(`✓ MCP tool file system generated at ${this.serversDir}`);
+        console.log(`✓ MCP tool file system generated at ${this.mcpDir}`);
       } else {
         console.warn(
           "⚠️  No MCP tools were fetched from the provided servers."
@@ -258,8 +258,8 @@ export class SandboxManager {
   /**
    * Get the path to the servers directory
    */
-  getServersDir(): string {
-    return this.serversDir;
+  getMcpDir(): string {
+    return this.mcpDir;
   }
 
   /**
