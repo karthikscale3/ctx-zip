@@ -21,6 +21,7 @@ generated-mcp-files/
 .sandbox-local/
 .sandbox-e2b/
 .sandbox-vercel/
+.sandbox-weather/
 
 # Environment files
 .env
