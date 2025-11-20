@@ -13,6 +13,8 @@
     "example:tools-weather-vercel": "npm run example:tools-weather -- --provider=vercel",
     "example:tools-weather-e2b": "npm run example:tools-weather -- --provider=e2b",
     "example:ctx-email": "tsx examples/ctx-management/email_management.ts",
+    "example:ctx-email-write": "tsx examples/ctx-management/email_management.ts --strategy=write-tool-results-to-file",
+    "example:ctx-email-drop": "tsx examples/ctx-management/email_management.ts --strategy=drop-tool-results",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "tsx tests/*.ts",

@@ -2,9 +2,10 @@ import type { ModelMessage } from "ai";
 import type { FileAdapter } from "../sandbox-code-generator/file-adapter.js";
 import { createFileAdapter, type UriOrAdapter } from "./lib/resolver.js";
 import {
+  dropToolResultsStrategy,
   writeToolResultsToFileStrategy,
   type Boundary,
-} from "./strategies/writeToolResultsToFile";
+} from "./strategies/index.js";
 
 /**
  * Options for compacting a conversation by persisting large tool outputs to storage
@@ -79,9 +80,13 @@ export async function compact(
         ],
         sessionId: options.sessionId,
       });
+    case "drop-tool-results":
+      return await dropToolResultsStrategy(messages, {
+        boundary,
+      });
     default:
       throw new Error(`Unknown compaction strategy: ${strategy}`);
   }
 }
 
-export type { Boundary } from "./strategies/writeToolResultsToFile";
+export type { Boundary } from "./strategies/index.js";

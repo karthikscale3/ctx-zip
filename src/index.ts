@@ -1,8 +1,11 @@
 // Public API barrel for npm package consumers
 
 // Tool Results Compactor
-export { compact } from "./tool-results-compactor/index";
-export type { Boundary, CompactOptions } from "./tool-results-compactor/index";
+export { compact } from "./tool-results-compactor/index.js";
+export type {
+  Boundary,
+  CompactOptions,
+} from "./tool-results-compactor/index.js";
 
 // Sandbox Code Generator
 export {

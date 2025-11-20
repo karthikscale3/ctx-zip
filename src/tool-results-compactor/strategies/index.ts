@@ -169,7 +169,7 @@ export interface WriteToolResultsToFileOptions {
   sessionId?: string;
 }
 
-function isToolMessage(msg: any): boolean {
+export function isToolMessage(msg: any): boolean {
   return msg && msg.role === "tool" && Array.isArray(msg.content);
 }
 
@@ -315,6 +315,52 @@ export async function writeToolResultsToFileStrategy(
           adapterUri,
           key
         )}. To read it, use: sandbox_cat({ file: "${key}" })`,
+      };
+    }
+  }
+
+  return msgs;
+}
+
+/**
+ * Options for the drop-tool-results compaction strategy.
+ */
+export interface DropToolResultsOptions {
+  boundary: Boundary;
+}
+
+/**
+ * Compaction strategy that drops tool results from the conversation.
+ */
+export async function dropToolResultsStrategy(
+  messages: ModelMessage[],
+  options: DropToolResultsOptions
+): Promise<ModelMessage[]> {
+  const msgs = Array.isArray(messages) ? [...messages] : [];
+
+  const lastMessage = msgs[msgs.length - 1] as any;
+  const endsWithAssistantText =
+    lastMessage &&
+    lastMessage.role === "assistant" &&
+    messageHasTextContent(lastMessage);
+  if (!endsWithAssistantText) return msgs;
+
+  const { start: windowStart, endExclusive } = detectWindowRange(
+    msgs,
+    options.boundary
+  );
+
+  for (let i = windowStart; i < Math.min(endExclusive, msgs.length - 1); i++) {
+    const msg: any = msgs[i];
+    if (!isToolMessage(msg)) continue;
+
+    for (const part of msg.content) {
+      if (!part || part.type !== "tool-result" || !part.output) continue;
+
+      // Drop the tool output - remove the output data but keep the tool result structure
+      part.output = {
+        type: "text",
+        value: `Results dropped for tool: ${part.toolName} to preserve context`,
       };
     }
   }

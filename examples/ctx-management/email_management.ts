@@ -307,6 +307,20 @@ interface ConversationStats {
 }
 
 async function main() {
+  // Parse strategy from command line args (default: write-tool-results-to-file)
+  const strategyArg = process.argv.find((arg) => arg.startsWith("--strategy="));
+  const strategy =
+    strategyArg?.split("=")[1] ||
+    process.env.COMPACTION_STRATEGY ||
+    "write-tool-results-to-file";
+
+  if (!["write-tool-results-to-file", "drop-tool-results"].includes(strategy)) {
+    console.error(
+      `\n❌ Invalid strategy: ${strategy}\nValid strategies: write-tool-results-to-file, drop-tool-results\n`
+    );
+    process.exit(1);
+  }
+
   // Select and validate environment
   const envConfig = await selectEnvironment();
 
@@ -351,6 +365,7 @@ async function main() {
       envConfig.sessionId
     }`
   );
+  console.log(`Strategy: ${strategy}`);
   console.log(`Storage: ${fileAdapter.toString()}`);
   console.log("=".repeat(80) + "\n");
 
@@ -492,6 +507,9 @@ async function main() {
 
       // Compact the ENTIRE conversation
       const compacted = await compact(messages, {
+        strategy: strategy as
+          | "write-tool-results-to-file"
+          | "drop-tool-results",
         storage: fileAdapter,
         boundary: "all",
         sessionId: envConfig.sessionId,
