@@ -5,13 +5,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "example:ctx-local": "tsx examples/ctx-management/local_file.ts",
     "example:mcp-vercel": "tsx examples/mcp/vercel_mcp_search.ts",
     "example:mcp-e2b": "tsx examples/mcp/e2b_mcp_search.ts",
     "example:mcp-local": "tsx examples/mcp/local_mcp_search.ts",
+    "example:tools-weather": "tsx examples/tools/weather_tool_sandbox.ts",
     "example:tools-weather-local": "npm run example:tools-weather -- --provider=local",
     "example:tools-weather-vercel": "npm run example:tools-weather -- --provider=vercel",
     "example:tools-weather-e2b": "npm run example:tools-weather -- --provider=e2b",
+    "example:ctx-email": "tsx examples/ctx-management/email_management.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "tsx tests/*.ts",
@@ -48,6 +49,9 @@
     "ai": "^5.0.0"
   },
   "peerDependenciesMeta": {
+    "@connectrpc/connect": {
+      "optional": true
+    },
     "@modelcontextprotocol/sdk": {
       "optional": true
     },
@@ -59,6 +63,7 @@
     }
   },
   "optionalDependencies": {
+    "@connectrpc/connect": "^2.0.0-rc.3",
     "@e2b/code-interpreter": "^1.5.1",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@vercel/sandbox": "^1.0.2"

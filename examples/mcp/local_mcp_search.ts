@@ -34,11 +34,9 @@ import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
 import { z } from "zod";
-import {
-  LocalSandboxProvider,
-  SANDBOX_SYSTEM_PROMPT,
-  SandboxManager,
-} from "../../src/index.js";
+import { LocalSandboxProvider } from "../../src/sandbox-code-generator/local-sandbox-provider.js";
+import { SANDBOX_SYSTEM_PROMPT } from "../../src/sandbox-code-generator/prompts.js";
+import { SandboxManager } from "../../src/sandbox-code-generator/sandbox-manager.js";
 
 // Load environment variables
 dotenv.config();

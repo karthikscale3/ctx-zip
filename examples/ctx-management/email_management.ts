@@ -32,14 +32,9 @@ import * as readline from "node:readline";
 import prompts from "prompts";
 import { fetchModels } from "tokenlens";
 import { z } from "zod";
-import {
-  compact,
-  E2BSandboxProvider,
-  FileAdapter,
-  LocalSandboxProvider,
-  SandboxManager,
-  VercelSandboxProvider,
-} from "../../src";
+import type { FileAdapter } from "../../src/sandbox-code-generator/file-adapter.js";
+import { SandboxManager } from "../../src/sandbox-code-generator/sandbox-manager.js";
+import { compact } from "../../src/tool-results-compactor/index.js";
 
 // Environment types
 type Environment = "local" | "e2b" | "vercel";
@@ -144,6 +139,9 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
     // Local file system storage with local sandbox
     console.log("Creating local sandbox...");
     storageBaseDir = path.resolve(process.cwd(), ".sandbox-local");
+    const { LocalSandboxProvider } = await import(
+      "../../src/sandbox-code-generator/local-sandbox-provider.js"
+    );
     const sandboxProvider = await LocalSandboxProvider.create({
       sandboxDir: storageBaseDir,
       cleanOnCreate: false,
@@ -164,6 +162,9 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
   } else if (environment === "e2b") {
     // E2B sandbox storage
     console.log("Creating E2B sandbox...");
+    const { E2BSandboxProvider } = await import(
+      "../../src/sandbox-code-generator/e2b-sandbox-provider.js"
+    );
     const sandboxProvider = await E2BSandboxProvider.create({
       timeout: 1800000, // 30 minutes
     });
@@ -184,6 +185,9 @@ async function selectEnvironment(): Promise<EnvironmentConfig> {
   } else if (environment === "vercel") {
     // Vercel sandbox storage
     console.log("Creating Vercel sandbox...");
+    const { VercelSandboxProvider } = await import(
+      "../../src/sandbox-code-generator/vercel-sandbox-provider.js"
+    );
     const sandboxProvider = await VercelSandboxProvider.create({
       timeout: 1800000, // 30 minutes
       runtime: "node22",

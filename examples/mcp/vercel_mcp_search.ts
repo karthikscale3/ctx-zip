@@ -25,11 +25,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
-import {
-  SANDBOX_SYSTEM_PROMPT,
-  SandboxManager,
-  VercelSandboxProvider,
-} from "../../src/index.js";
+import { SANDBOX_SYSTEM_PROMPT } from "../../src/sandbox-code-generator/prompts.js";
+import { SandboxManager } from "../../src/sandbox-code-generator/sandbox-manager.js";
+import { VercelSandboxProvider } from "../../src/sandbox-code-generator/vercel-sandbox-provider.js";
 
 // Load environment variables
 dotenv.config();

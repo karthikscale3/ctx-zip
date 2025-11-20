@@ -26,11 +26,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as readline from "node:readline";
 import { fetchModels } from "tokenlens";
-import {
-  E2BSandboxProvider,
-  SANDBOX_SYSTEM_PROMPT,
-  SandboxManager,
-} from "../../src/index.js";
+import { E2BSandboxProvider } from "../../src/sandbox-code-generator/e2b-sandbox-provider.js";
+import { SANDBOX_SYSTEM_PROMPT } from "../../src/sandbox-code-generator/prompts.js";
+import { SandboxManager } from "../../src/sandbox-code-generator/sandbox-manager.js";
 
 // Load environment variables
 dotenv.config();

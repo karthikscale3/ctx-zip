@@ -259,6 +259,240 @@ function createMetadataConst(
   return `export const ${constName} = ${serialized} as const;`;
 }
 
+/**
+ * Format function code by adding line breaks and indentation
+ * Simplified approach: extract the function body and format it
+ */
+function formatFunctionCode(code: string): string {
+  // If code already has multiple lines with proper formatting, return as-is
+  const lines = code.split("\n");
+  if (
+    lines.length > 1 &&
+    lines.some((line) => line.trim().length > 0 && line.startsWith("  "))
+  ) {
+    return code;
+  }
+
+  // Find the function body opening brace (after parameter list)
+  let bodyBraceIndex = -1;
+  let parenDepth = 0;
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    const prevChar = i > 0 ? code[i - 1] : "";
+
+    if ((char === '"' || char === "'" || char === "`") && prevChar !== "\\") {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        inString = false;
+        stringChar = "";
+      }
+    }
+
+    if (!inString) {
+      if (char === "(") parenDepth++;
+      else if (char === ")") parenDepth--;
+      else if (char === "{" && parenDepth === 0) {
+        bodyBraceIndex = i;
+        break;
+      }
+    }
+  }
+
+  if (bodyBraceIndex === -1) {
+    return code;
+  }
+
+  const signature = code.slice(0, bodyBraceIndex).trim();
+  const bodyStart = bodyBraceIndex + 1;
+
+  // Extract the entire function body between the braces
+  let body = "";
+  let braceDepth = 0;
+  inString = false;
+  stringChar = "";
+
+  for (let i = bodyStart; i < code.length; i++) {
+    const char = code[i];
+    const prevChar = i > 0 ? code[i - 1] : "";
+
+    if ((char === '"' || char === "'" || char === "`") && prevChar !== "\\") {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        inString = false;
+        stringChar = "";
+      }
+    }
+
+    if (!inString) {
+      if (char === "{") braceDepth++;
+      else if (char === "}") {
+        if (braceDepth === 0) {
+          break; // Found closing brace
+        }
+        braceDepth--;
+      }
+    }
+
+    body += char;
+  }
+
+  const trimmedBody = body.trim();
+  if (!trimmedBody || trimmedBody.length < 30) {
+    return code;
+  }
+
+  // Simple formatting: split statements and format return objects
+  const formattedBody = formatFunctionBody(trimmedBody);
+
+  return `${signature} {\n  ${formattedBody}\n}`;
+}
+
+/**
+ * Format function body by splitting statements and formatting return objects
+ */
+function formatFunctionBody(body: string): string {
+  // Split into statements by semicolons (respecting strings and nested structures)
+  const statements: string[] = [];
+  let current = "";
+  let depth = 0;
+  let parenDepth = 0;
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < body.length; i++) {
+    const char = body[i];
+    const prevChar = i > 0 ? body[i - 1] : "";
+
+    if ((char === '"' || char === "'" || char === "`") && prevChar !== "\\") {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        inString = false;
+        stringChar = "";
+      }
+    }
+
+    if (!inString) {
+      if (char === "{") depth++;
+      else if (char === "}") depth--;
+      else if (char === "(") parenDepth++;
+      else if (char === ")") parenDepth--;
+    }
+
+    if (char === ";" && depth === 0 && parenDepth === 0 && !inString) {
+      statements.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) {
+    statements.push(current.trim());
+  }
+
+  // Format each statement
+  return statements
+    .map((stmt) => formatStatement(stmt))
+    .filter((s) => s.length > 0)
+    .join(";\n  ");
+}
+
+/**
+ * Format a single statement, especially return objects
+ */
+function formatStatement(stmt: string): string {
+  if (!stmt.startsWith("return")) {
+    return stmt;
+  }
+
+  // Check if it's a return with an object
+  const returnMatch = stmt.match(/^return\s*(\{.*\})/);
+  if (!returnMatch) {
+    return stmt;
+  }
+
+  const objStr = returnMatch[1];
+  // Extract object content (without outer braces)
+  const objContent = objStr.slice(1, -1).trim();
+
+  if (!objContent) {
+    return stmt;
+  }
+
+  // Split properties by commas (respecting nested structures)
+  const props = splitObjectProperties(objContent);
+  if (props.length <= 1) {
+    return stmt; // Keep single property on one line
+  }
+
+  const formattedProps = props.join(",\n    ");
+  return `return {\n    ${formattedProps}\n  }`;
+}
+
+/**
+ * Split object properties by commas, respecting nested structures
+ */
+function splitObjectProperties(content: string): string[] {
+  const props: string[] = [];
+  let current = "";
+  let depth = 0;
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let inString = false;
+  let stringChar = "";
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    const prevChar = i > 0 ? content[i - 1] : "";
+
+    if ((char === '"' || char === "'" || char === "`") && prevChar !== "\\") {
+      if (!inString) {
+        inString = true;
+        stringChar = char;
+      } else if (char === stringChar) {
+        inString = false;
+        stringChar = "";
+      }
+    }
+
+    if (!inString) {
+      if (char === "{") depth++;
+      else if (char === "}") depth--;
+      else if (char === "(") parenDepth++;
+      else if (char === ")") parenDepth--;
+      else if (char === "[") bracketDepth++;
+      else if (char === "]") bracketDepth--;
+    }
+
+    if (
+      char === "," &&
+      depth === 0 &&
+      parenDepth === 0 &&
+      bracketDepth === 0 &&
+      !inString
+    ) {
+      props.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    props.push(current.trim());
+  }
+
+  return props.filter((p) => p.length > 0);
+}
+
 function createExecuteFunctionExport(
   identifier: string,
   execute: Tool<any, any>["execute"]
@@ -268,38 +502,32 @@ function createExecuteFunctionExport(
   }
 
   const source = execute.toString().trim();
+  let result: string;
 
   if (/^async\s+execute/.test(source)) {
-    return source.replace(
+    result = source.replace(
       /^async\s+execute/,
       `export async function ${identifier}`
     );
-  }
-
-  if (/^execute\s*\(/.test(source)) {
-    return source.replace(/^execute/, `export function ${identifier}`);
-  }
-
-  if (/^async\s+function\s+\w+/.test(source)) {
-    return source.replace(
+  } else if (/^execute\s*\(/.test(source)) {
+    result = source.replace(/^execute/, `export function ${identifier}`);
+  } else if (/^async\s+function\s+\w+/.test(source)) {
+    result = source.replace(
       /^async\s+function\s+\w+/,
       `export async function ${identifier}`
     );
+  } else if (/^function\s+\w+/.test(source)) {
+    result = source.replace(/^function\s+\w+/, `export function ${identifier}`);
+  } else if (/^async\s*\(/.test(source) || /^async\s*\{/.test(source)) {
+    result = `export const ${identifier} = ${source};`;
+  } else if (/^\(/.test(source)) {
+    result = `export const ${identifier} = ${source};`;
+  } else {
+    result = `export const ${identifier} = ${source};`;
   }
 
-  if (/^function\s+\w+/.test(source)) {
-    return source.replace(/^function\s+\w+/, `export function ${identifier}`);
-  }
-
-  if (/^async\s*\(/.test(source) || /^async\s*\{/.test(source)) {
-    return `export const ${identifier} = ${source};`;
-  }
-
-  if (/^\(/.test(source)) {
-    return `export const ${identifier} = ${source};`;
-  }
-
-  return `export const ${identifier} = ${source};`;
+  // Format the result before returning
+  return formatFunctionCode(result);
 }
 
 function schemaToJsonSchema(schema: unknown): JsonSchema | undefined {

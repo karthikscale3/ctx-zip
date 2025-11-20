@@ -20,14 +20,9 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import {
-  E2BSandboxProvider,
-  LocalSandboxProvider,
-  SandboxManager,
-  VercelSandboxProvider,
-  type SandboxProvider,
-  type ToolCodeGenerationResult,
-} from "../../src/index.js";
+import { SandboxManager } from "../../src/sandbox-code-generator/sandbox-manager.js";
+import type { SandboxProvider } from "../../src/sandbox-code-generator/sandbox-provider.js";
+import type { ToolCodeGenerationResult } from "../../src/sandbox-code-generator/tool-code-writer.js";
 
 type ProviderName = "local" | "vercel" | "e2b";
 type ProviderSelection = ProviderName | "all";
@@ -147,15 +142,27 @@ async function createProvider(
   provider: ProviderName
 ): Promise<SandboxProvider> {
   switch (provider) {
-    case "local":
+    case "local": {
+      const { LocalSandboxProvider } = await import(
+        "../../src/sandbox-code-generator/local-sandbox-provider.js"
+      );
       return await LocalSandboxProvider.create({
         sandboxDir: "./.sandbox-weather",
         cleanOnCreate: true,
       });
-    case "vercel":
+    }
+    case "vercel": {
+      const { VercelSandboxProvider } = await import(
+        "../../src/sandbox-code-generator/vercel-sandbox-provider.js"
+      );
       return await VercelSandboxProvider.create();
-    case "e2b":
+    }
+    case "e2b": {
+      const { E2BSandboxProvider } = await import(
+        "../../src/sandbox-code-generator/e2b-sandbox-provider.js"
+      );
       return await E2BSandboxProvider.create();
+    }
     default:
       throw new Error(`Unsupported provider: ${provider satisfies never}`);
   }
@@ -227,16 +234,9 @@ async function printFileSnippet(
   filePath: string,
   maxLines: number
 ): Promise<void> {
-  const snippetCommand = [
-    "const fs = require('fs');",
-    `const data = fs.readFileSync(${JSON.stringify(filePath)}, 'utf8');`,
-    `const lines = data.split('\\n').slice(0, ${maxLines});`,
-    "console.log(lines.join('\\n'));",
-  ].join("");
-
   const snippetResult = await provider.runCommand({
-    cmd: "node",
-    args: ["-e", snippetCommand],
+    cmd: "head",
+    args: [`-n${maxLines}`, filePath],
   });
 
   const snippetOutput = await snippetResult.stdout();
