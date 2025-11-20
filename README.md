@@ -215,7 +215,7 @@ await manager.cleanup()
 
 ### Technique 2: Output Compaction with Smart Retrieval
 
-Automatically persist large tool outputs to sandbox storage and retrieve them on-demand:
+Automatically reduce context size by managing large tool outputs. Two strategies available: **write-to-file** (persist to storage with on-demand retrieval) or **drop-results** (remove outputs entirely).
 
 ```typescript
 import { generateText, tool } from "ai";
@@ -244,9 +244,10 @@ const result = await generateText({
   },
   prompt: "Check my latest emails and find any about 'budget'",
   prepareStep: async ({ messages }) => {
-    // Compact outputs after each turn
+    // Compact outputs after each turn (default: write-tool-results-to-file)
     const compacted = await compact(messages, {
-      storage: fileAdapter,
+      strategy: "write-tool-results-to-file", // or "drop-tool-results"
+      storage: fileAdapter, // Required for write-tool-results-to-file
       boundary: "all",
       sessionId: "my-session",
     });
@@ -258,7 +259,15 @@ const result = await generateText({
 await manager.cleanup();
 ```
 
-**How Compaction Works:**
+**Compaction Strategies:**
+
+ctx-zip provides two strategies for managing tool outputs:
+
+#### Strategy 1: `write-tool-results-to-file` (Default)
+
+Persists tool outputs to storage and replaces them with references. Agents can retrieve data on-demand.
+
+**How it works:**
 
 1. **Agent calls a tool** (e.g., `fetchEmails(50)`)
 2. **Large output returned** (50 emails = 10,000 tokens)
@@ -277,9 +286,26 @@ await manager.cleanup();
    - `sandbox_grep(pattern, path)` - Search within files
    - `sandbox_find(pattern, path)` - Find files by name pattern
 
-**Storage Location:**
+**When to use:** When you need agents to access historical tool outputs later in the conversation.
 
-When using `SandboxManager` with compaction:
+#### Strategy 2: `drop-tool-results`
+
+Removes tool outputs entirely from the conversation, replacing them with a simple message indicating the output was dropped.
+
+**How it works:**
+
+1. **Agent calls a tool** (e.g., `fetchEmails(50)`)
+2. **Large output returned** (50 emails = 10,000 tokens)
+3. **`compact()` runs in `prepareStep`:**
+   - Detects tool output
+   - Replaces output with: `"Results dropped for tool: fetchEmails to preserve context"`
+   - No storage required - outputs are permanently removed
+
+**When to use:** When tool outputs are only needed for immediate processing and don't need to be referenced later. Maximum token savings, simplest setup.
+
+**Storage Location** (write-tool-results-to-file only):
+
+When using `SandboxManager` with `write-tool-results-to-file` strategy:
 
 ```
 /workspace/
@@ -292,6 +318,8 @@ When using `SandboxManager` with compaction:
 ```
 
 Each tool overwrites its own file on subsequent calls (one file per tool type).
+
+**Note:** The `drop-tool-results` strategy doesn't use storage - outputs are removed from the conversation entirely.
 
 **Boundary Strategies:**
 
@@ -309,9 +337,9 @@ boundary: { type: "keep-first", count: 5 }
 boundary: { type: "keep-last", count: 20 }
 ```
 
-**Sandbox Tools for Retrieval:**
+**Sandbox Tools for Retrieval** (write-tool-results-to-file only):
 
-Use compaction-specific tools that default to the workspace root:
+When using `write-tool-results-to-file`, use compaction-specific tools that default to the workspace root:
 
 ```typescript
 const manager = await SandboxManager.create();
@@ -324,15 +352,50 @@ const tools = manager.getCompactionTools();
 // Just copy the path from the message!
 ```
 
+**Note:** The `drop-tool-results` strategy doesn't require retrieval tools since outputs are permanently removed.
+
+**Example: Drop Strategy (No Storage Required)**
+
+```typescript
+import { generateText, tool } from "ai";
+import { z } from "zod";
+import { compact } from "ctx-zip";
+
+const result = await generateText({
+  model: "openai/gpt-4.1-mini",
+  tools: {
+    fetchEmails: tool({
+      description: "Fetch emails from inbox",
+      inputSchema: z.object({ limit: z.number() }),
+      async execute({ limit }) {
+        const emails = await getEmails(limit);
+        return { emails }; // This will be dropped
+      },
+    }),
+  },
+  prompt: "Summarize my latest emails",
+  prepareStep: async ({ messages }) => {
+    // Drop tool outputs - no storage needed
+    const compacted = await compact(messages, {
+      strategy: "drop-tool-results",
+      boundary: "all",
+    });
+    
+    return { messages: compacted };
+  },
+});
+```
+
 **API Reference:**
 
 ```typescript
 // Compact messages
 const compacted = await compact(messages, {
-  storage: FileAdapter | string,    // Where to write files
+  strategy?: "write-tool-results-to-file" | "drop-tool-results", // Default: write-tool-results-to-file
+  storage?: FileAdapter | string,    // Required for write-tool-results-to-file, ignored for drop-tool-results
   boundary?: Boundary,               // Which messages to compact
-  sessionId?: string,                // Organize by session
-  fileReaderTools?: string[],        // Tools that read (not persisted)
+  sessionId?: string,                // Organize by session (write-tool-results-to-file only)
+  fileReaderTools?: string[],        // Tools that read (not persisted, write-tool-results-to-file only)
 });
 ```
 
@@ -376,7 +439,8 @@ const result = await generateText({
   prompt: "Search for authentication bugs in the codebase and summarize",
   prepareStep: async ({ messages }) => {
     const compacted = await compact(messages, {
-      storage: fileAdapter,
+      strategy: "write-tool-results-to-file", // or "drop-tool-results"
+      storage: fileAdapter, // Required for write-tool-results-to-file
       boundary: "all",
       sessionId: "combined-session",
     });
@@ -516,10 +580,11 @@ function compact(
 ): Promise<ModelMessage[]>
 
 interface CompactOptions {
-  storage: FileAdapter | string,
+  strategy?: "write-tool-results-to-file" | "drop-tool-results",
+  storage?: FileAdapter | string,  // Required for write-tool-results-to-file
   boundary?: Boundary,
-  sessionId?: string,
-  fileReaderTools?: string[],
+  sessionId?: string,               // write-tool-results-to-file only
+  fileReaderTools?: string[],        // write-tool-results-to-file only
 }
 
 type Boundary = 
