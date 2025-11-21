@@ -9,6 +9,9 @@ export type {
 
 // Sandbox Code Generator
 export {
+  createE2BSandboxCodeMode,
+  createLocalSandboxCodeMode,
+  createVercelSandboxCodeMode,
   E2BSandboxProvider,
   LocalSandboxProvider,
   SANDBOX_SYSTEM_PROMPT,
@@ -23,6 +26,9 @@ export type {
   FileWriteResult,
   LocalFileAdapterOptions,
   LocalSandboxOptions,
+  MCPServerConfig,
+  SandboxCodeModeOptions,
+  SandboxCodeModeResult,
   SandboxProvider,
   SandboxProviderOptions,
   ToolCodeGenerationResult,

@@ -21,7 +21,19 @@ export type {
   SandboxProvider,
   SandboxProviderOptions,
 } from "./sandbox-provider.js";
+export {
+  createE2BSandboxCodeMode,
+  createLocalSandboxCodeMode,
+  createVercelSandboxCodeMode,
+  type SandboxCodeModeOptions,
+  type SandboxCodeModeResult,
+} from "./sandbox-utils.js";
 export type { ToolCodeGenerationResult } from "./tool-code-writer.js";
+export type {
+  MCPServerConfig,
+  ServerToolsMap,
+  ToolDefinition,
+} from "./types.js";
 export {
   VercelSandboxProvider,
   type VercelSandboxOptions,

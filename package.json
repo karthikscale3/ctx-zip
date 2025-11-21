@@ -1,11 +1,12 @@
 {
   "name": "ctx-zip",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Keep your AI agent context small and cheap by managing tool bloat and large outputs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "example:mcp-vercel": "tsx examples/mcp/vercel_mcp_search.ts",
+    "example:mcp-vercel-simple": "tsx examples/mcp/vercel_mcp_simple.ts",
     "example:mcp-e2b": "tsx examples/mcp/e2b_mcp_search.ts",
     "example:mcp-local": "tsx examples/mcp/local_mcp_search.ts",
     "example:tools-weather": "tsx examples/tools/weather_tool_sandbox.ts",
@@ -72,6 +73,7 @@
   },
   "devDependencies": {
     "@ai-sdk/openai": "^2.0.35",
+    "@connectrpc/connect": "^2.0.0-rc.3",
     "@tokenlens/helpers": "^1.3.1",
     "@types/node": "^24.5.2",
     "@types/prompts": "^2.4.9",
