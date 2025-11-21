@@ -1,6 +1,6 @@
 {
   "name": "ctx-zip",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Keep your AI agent context small and cheap by managing tool bloat and large outputs.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -46,15 +46,13 @@
     "dist"
   ],
   "dependencies": {
+    "@connectrpc/connect": "^2.0.0-rc.3",
     "zod": "^4.1.11"
   },
   "peerDependencies": {
     "ai": "^5.0.0"
   },
   "peerDependenciesMeta": {
-    "@connectrpc/connect": {
-      "optional": true
-    },
     "@modelcontextprotocol/sdk": {
       "optional": true
     },
@@ -66,7 +64,6 @@
     }
   },
   "optionalDependencies": {
-    "@connectrpc/connect": "^2.0.0-rc.3",
     "@e2b/code-interpreter": "^1.5.1",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@vercel/sandbox": "^1.0.2"
