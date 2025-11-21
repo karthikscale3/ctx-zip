@@ -3,10 +3,6 @@
 
 import type { Tool } from "ai";
 import {
-  E2BSandboxProvider,
-  type E2BSandboxOptions,
-} from "./e2b-sandbox-provider.js";
-import {
   LocalSandboxProvider,
   type LocalSandboxOptions,
 } from "./local-sandbox-provider.js";
@@ -17,6 +13,9 @@ import {
   VercelSandboxProvider,
   type VercelSandboxOptions,
 } from "./vercel-sandbox-provider.js";
+
+// Lazy import types - these are only imported when needed
+import type { E2BSandboxOptions } from "./e2b-sandbox-provider.js";
 
 /**
  * Options for creating a sandbox in code mode
@@ -180,6 +179,9 @@ export async function createE2BSandboxCodeMode(
     standardTools = {},
     standardToolOptions,
   } = options;
+
+  // Lazy import E2B provider to avoid loading it when not needed
+  const { E2BSandboxProvider } = await import("./e2b-sandbox-provider.js");
 
   // Validate required environment variable (check both options and env)
   const apiKey =
